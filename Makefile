@@ -11,7 +11,7 @@ KVERSION = $(shell uname -r)
 all:	
 	make -C /lib/modules/$(KVERSION)/build V=1 M=$(PWD) modules
 
-install: 
+install: all
 	make -C /lib/modules/$(KVERSION)/build V=1 M=$(PWD) modules_install
 	depmod
 	#cp utcadrv_io.h /usr/local/include

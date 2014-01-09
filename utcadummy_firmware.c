@@ -28,15 +28,15 @@ void utcadummy_initialiseSystemBar(u32 * systemBarBaseAddress)
 /* do something when a register has been written */
 void  utcadummy_performActionOnWrite( u32 offset, unsigned int barNumber )
 {
+  u32 * systemBarBaseAddress;
+  u32 * dmaBarBaseAddress;
+
   if (barNumber != 0)
   {
     /*Currently only some actions are foreseen when writing to the system bar.
       Just retrun otherwise */
     return;
   }
-
-  u32 * systemBarBaseAddress;
-  u32 * dmaBarBaseAddress;
 
   systemBarBaseAddress = dummyPrivateData->systemBar;
   dmaBarBaseAddress = dummyPrivateData->dmaBar;
@@ -71,6 +71,14 @@ void  utcadummy_performActionOnWrite( u32 offset, unsigned int barNumber )
 	*(systemBarBaseAddress + UTCADUMMY_WORD_CLK_CNT_0  /sizeof(u32)) = nSamples;
 	*(systemBarBaseAddress + UTCADUMMY_WORD_CLK_RST /sizeof(u32)) = 0;
       }
+      break;
+      // set back the firmware word. This is read only
+    case UTCADUMMY_WORD_FIRMWARE:
+      *(systemBarBaseAddress + UTCADUMMY_WORD_FIRMWARE   /sizeof(u32) ) = UTCADUMMY_DRV_VERSION_MAJ;
+      break;
+      // set back the compilation word. This is read only
+    case  UTCADUMMY_WORD_COMPILATION:
+      *(systemBarBaseAddress + UTCADUMMY_WORD_COMPILATION/sizeof(u32) ) = UTCADUMMY_DRV_VERSION_MIN;
       break;
       /* default: do nothing */
   }

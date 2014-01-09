@@ -16,7 +16,7 @@
 /* 
  * Put an extern "C" declaration when compiling with C++. Like this the structs can be used from the included
  * header files. Having this declatation in the header saves extern "C" declaration in all C++ files using
- * this header (avoid code duplication and frogetting the declaration).
+ * this header (avoid code duplication and forgetting the declaration).
  */
 #ifdef __cplusplus
 extern "C" {
@@ -33,7 +33,7 @@ extern "C" {
 
 #define UTCADUMMY_NR_DEVS       4 /*create 4 devices*/
 #define UTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
-#define UTCADUMMY_DRV_VERSION_MIN 1 /*dummy driver minor version*/
+#define UTCADUMMY_DRV_VERSION_MIN 2 /*dummy driver minor version*/
 
 //#define UTCADUMMY_VENDOR_ID               0x10EE
 //#define UTCADUMMY_DEVICE_ID               0x0038
