@@ -28,8 +28,8 @@
 #define LLRFDUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
 #define LLRFDUMMY_DRV_VERSION_MIN 0 /*dummy driver minor version*/
 
-#define LLRFDUMMY_VENDOR_ID               0x10EE
-#define LLRFDUMMY_DEVICE_ID               0x0038
+//#define LLRFDUMMY_VENDOR_ID               0x10EE
+//#define LLRFDUMMY_DEVICE_ID               0x0038
 
 #define LLRFDUMMY_NAME                    "llrfdummy"
 #define LLRFDUMMY_DBG_MSG_DEV_NAME        "LLRFDUMMY"

@@ -37,7 +37,6 @@ static int __init llrfDummy_init_module(void) {
     int status;
     dev_t dev;
     int i, j;
-    int deviceNumber;
 
     dbg_print("%s\n", "MODULE INIT");
     status = alloc_chrdev_region(&dev, llrfDummyMinorNr, LLRFDUMMY_NR_DEVS, LLRFDUMMY_NAME);
@@ -55,7 +54,7 @@ static int __init llrfDummy_init_module(void) {
 
     memset(dummyPrivateData, 0, sizeof (dummyPrivateData));
     for (i = 0; i < LLRFDUMMY_NR_DEVS + 1; i++) {
-        deviceNumber = MKDEV(llrfDummyMajorNr, llrfDummyMinorNr + i);
+        dev_t deviceNumber = MKDEV(llrfDummyMajorNr, llrfDummyMinorNr + i);
 	
 	/* before we initialise the character device we have to initialise all the local variables and
 	 * the mutex. These have to be in place before the device file becomes available. */
@@ -64,7 +63,7 @@ static int __init llrfDummy_init_module(void) {
 	dummyPrivateData[i].registerBar = kmalloc( LLRFDUMMY_N_REGISTERS * sizeof(u32), GFP_KERNEL);
 	if ( dummyPrivateData[i].registerBar == NULL)
 	{
-	  goto err_device_create;
+	  goto err_allocate_registerBar;
 	}
 	memset(dummyPrivateData[i].registerBar, 0, LLRFDUMMY_N_REGISTERS * sizeof(u32));
 	dummyPrivateData[i].dmaBar = kmalloc(  LLRFDUMMY_DMA_SIZE, GFP_KERNEL);
@@ -72,7 +71,7 @@ static int __init llrfDummy_init_module(void) {
 	{
 	  /* free the already allocated memory */
 	  kfree(  dummyPrivateData[i].registerBar );
-	  goto err_device_create;
+	  goto err_allocate_dmaBar;
 	}
 	memset(dummyPrivateData[i].dmaBar, 0, LLRFDUMMY_DMA_SIZE);
 
@@ -88,22 +87,33 @@ static int __init llrfDummy_init_module(void) {
         status = cdev_add(&dummyPrivateData[i].cdev, deviceNumber, 1);
         if (status) {
             dbg_print("Error in cdev_add: %d\n", status);
-	    /* release this mutex and free the memory*/
-	    mutex_destroy(&dummyPrivateData[i].devMutex);
-	    kfree(dummyPrivateData[i].registerBar);
-	    kfree(dummyPrivateData[i].dmaBar);
-	    
-            goto err_device_create;
+            goto err_cdev_init;
         }
+
+	if (device_create(llrfDummyClass, NULL, deviceNumber, NULL, LLRFDUMMY_NAME"s%d", i) == NULL) {
+	    dbg_print("%s\n", "Error in device_create");
+	    goto err_device_create;
+	}
+
     }
 
     dbg_print("%s\n", "MODULE INIT DONE");
     return 0;
 
+    /* undo the steps for device i. As i is still at the same position where it was when we jumped 
+       out of the loop, we can use it here. */
 err_device_create:
+    cdev_del(&dummyPrivateData[j].cdev);
+err_cdev_init:
+    mutex_destroy(&dummyPrivateData[i].devMutex);
+    kfree(dummyPrivateData[i].registerBar);
+err_allocate_dmaBar:
+    kfree(dummyPrivateData[i].registerBar);
+err_allocate_registerBar:
     /* Unroll all already registered device files and their mutexes and memory. */
     /* As i still contains the position where the loop stopped we can use it here. */
     for (j = 0; j < i; j++) {      
+      device_destroy(llrfDummyClass, MKDEV(llrfDummyMajorNr, llrfDummyMinorNr + j));
       cdev_del(&dummyPrivateData[j].cdev);
       mutex_destroy(&dummyPrivateData[j].devMutex);
       kfree(dummyPrivateData[j].registerBar);
@@ -122,8 +132,9 @@ static void __exit llrfDummy_cleanup_module(void) {
     dev_t deviceNumber;
     dbg_print("%s\n", "MODULE CLEANUP");
 
-    deviceNumber = MKDEV(llrfDummyMinorNr, llrfDummyMinorNr);
+    deviceNumber = MKDEV(llrfDummyMajorNr, llrfDummyMinorNr);
     for (i = 0; i < LLRFDUMMY_NR_DEVS + 1; i++) {
+        device_destroy(llrfDummyClass, MKDEV(llrfDummyMajorNr, llrfDummyMinorNr + i));
         cdev_del(&dummyPrivateData[i].cdev);
         mutex_destroy(&dummyPrivateData[i].devMutex);
 	kfree(dummyPrivateData[i].registerBar);	
