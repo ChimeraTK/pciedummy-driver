@@ -1,4 +1,6 @@
 #include "utcadummy.h"
+#include "utcadummy_proc.h"
+#include "utcadummy_firmware.h"
 /*#include "utcadrv_io.h"  already done in utcadummy.h*/
 
 /* do we need ALL of these? */
@@ -30,7 +32,7 @@ struct file_operations utcaDummyFileOps;
 /* static struct pci_driver pci_utcadrv; no pci access */
 
 /* this is the part I want to avoid, or is it not?*/
-utcaDummyData dummyPrivateData[UTCADUMMY_NR_DEVS + 1]; /*why +1?*/
+utcaDummyData dummyPrivateData[UTCADUMMY_NR_DEVS];
 
 /* initialise the device when loading the driver */
 static int __init utcaDummy_init_module(void) {
@@ -53,27 +55,30 @@ static int __init utcaDummy_init_module(void) {
     }
 
     memset(dummyPrivateData, 0, sizeof (dummyPrivateData));
-    for (i = 0; i < UTCADUMMY_NR_DEVS + 1; i++) {
+    for (i = 0; i < UTCADUMMY_NR_DEVS; i++) {
         dev_t deviceNumber = MKDEV(utcaDummyMajorNr, utcaDummyMinorNr + i);
 	
 	/* before we initialise the character device we have to initialise all the local variables and
 	 * the mutex. These have to be in place before the device file becomes available. */
 	
 	/* try to allocate memory, this might fail */
-	dummyPrivateData[i].registerBar = kmalloc( UTCADUMMY_N_REGISTERS * sizeof(u32), GFP_KERNEL);
-	if ( dummyPrivateData[i].registerBar == NULL)
+	dummyPrivateData[i].systemBar = kmalloc( UTCADUMMY_N_REGISTERS * sizeof(u32), GFP_KERNEL);
+	if ( dummyPrivateData[i].systemBar == NULL)
 	{
-	  goto err_allocate_registerBar;
+	  goto err_allocate_systemBar;
 	}
-	memset(dummyPrivateData[i].registerBar, 0, UTCADUMMY_N_REGISTERS * sizeof(u32));
+	memset(dummyPrivateData[i].systemBar, 0, UTCADUMMY_N_REGISTERS * sizeof(u32));
 	dummyPrivateData[i].dmaBar = kmalloc(  UTCADUMMY_DMA_SIZE, GFP_KERNEL);
 	if ( dummyPrivateData[i].dmaBar == NULL)
 	{
 	  /* free the already allocated memory */
-	  kfree(  dummyPrivateData[i].registerBar );
+	  kfree(  dummyPrivateData[i].systemBar );
 	  goto err_allocate_dmaBar;
 	}
 	memset(dummyPrivateData[i].dmaBar, 0, UTCADUMMY_DMA_SIZE);
+
+	/* before initialising diver object run the "firmware" initialisation, i.e. set the allocated registers*/
+	utcadummy_initialiseSystemBar(dummyPrivateData[i].systemBar);
 
         mutex_init(&dummyPrivateData[i].devMutex);
 	atomic_set(&dummyPrivateData[i].inUse,0);
@@ -97,6 +102,8 @@ static int __init utcaDummy_init_module(void) {
 
     }
 
+    utcadummy_create_proc();
+
     dbg_print("%s\n", "MODULE INIT DONE");
     return 0;
 
@@ -106,17 +113,17 @@ err_device_create:
     cdev_del(&dummyPrivateData[j].cdev);
 err_cdev_init:
     mutex_destroy(&dummyPrivateData[i].devMutex);
-    kfree(dummyPrivateData[i].registerBar);
+    kfree(dummyPrivateData[i].systemBar);
 err_allocate_dmaBar:
-    kfree(dummyPrivateData[i].registerBar);
-err_allocate_registerBar:
+    kfree(dummyPrivateData[i].systemBar);
+err_allocate_systemBar:
     /* Unroll all already registered device files and their mutexes and memory. */
     /* As i still contains the position where the loop stopped we can use it here. */
     for (j = 0; j < i; j++) {      
       device_destroy(utcaDummyClass, MKDEV(utcaDummyMajorNr, utcaDummyMinorNr + j));
       cdev_del(&dummyPrivateData[j].cdev);
       mutex_destroy(&dummyPrivateData[j].devMutex);
-      kfree(dummyPrivateData[j].registerBar);
+      kfree(dummyPrivateData[j].systemBar);
       kfree(dummyPrivateData[j].dmaBar);
     }
     class_destroy(utcaDummyClass);
@@ -132,12 +139,14 @@ static void __exit utcaDummy_cleanup_module(void) {
     dev_t deviceNumber;
     dbg_print("%s\n", "MODULE CLEANUP");
 
+    utcadummy_remove_proc();
+
     deviceNumber = MKDEV(utcaDummyMajorNr, utcaDummyMinorNr);
-    for (i = 0; i < UTCADUMMY_NR_DEVS + 1; i++) {
+    for (i = 0; i < UTCADUMMY_NR_DEVS; i++) {
         device_destroy(utcaDummyClass, MKDEV(utcaDummyMajorNr, utcaDummyMinorNr + i));
         cdev_del(&dummyPrivateData[i].cdev);
         mutex_destroy(&dummyPrivateData[i].devMutex);
-	kfree(dummyPrivateData[i].registerBar);	
+	kfree(dummyPrivateData[i].systemBar);	
 	kfree(dummyPrivateData[i].dmaBar);
     }
     class_destroy(utcaDummyClass);
@@ -206,7 +215,7 @@ static ssize_t utcaDummy_read(struct file *filp, char __user *buf, size_t count,
     } else if (readReqInfo.mode_rw == RW_D32) {
         switch( readReqInfo.barx_rw ){
 	case 0:
-	    barBaseAddress = privData->registerBar;
+	    barBaseAddress = privData->systemBar;
 	    barSize = UTCADUMMY_N_REGISTERS*4;
 	    break;
 	case 2:
@@ -296,7 +305,7 @@ static ssize_t utcaDummy_write(struct file *filp, const char __user *buf, size_t
     if (writeReqInfo.mode_rw == RW_D32) {
         switch( writeReqInfo.barx_rw ){
 	case 0:
-	    barBaseAddress = privData->registerBar;
+	    barBaseAddress = privData->systemBar;
 	    barSize = UTCADUMMY_N_REGISTERS*4;
 	    break;
 	case 2:
@@ -314,7 +323,9 @@ static ssize_t utcaDummy_write(struct file *filp, const char __user *buf, size_t
             return -EFAULT;
         }
         barBaseAddress[writeReqInfo.offset_rw/4] = writeReqInfo.data_rw;
-	
+	// invoce the simulation of the "firmware"
+	utcadummy_performActionOnWrite( writeReqInfo.offset_rw,  writeReqInfo.barx_rw );
+		
 	/* not mapped memory, no need to wait here:        wmb(); */
         mutex_unlock(&privData->devMutex);
         return sizeof (writeReqInfo);

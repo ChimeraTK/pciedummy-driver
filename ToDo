@@ -1,4 +1,5 @@
 Phase 1: resemble llrfuni
+-create proc file to monitor the registers
 -implement ioctl like llrfuni
 -prepare registers like sis8300 / standard registers upcie
 -write unit test

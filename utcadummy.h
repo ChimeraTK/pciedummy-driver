@@ -5,6 +5,9 @@
  * without the need to install hardware.
  * This allows the implementation and execution of unit tests / automated tests
  * on any computer.
+ *
+ * For debugging purposes there is a proc file which dumps the register content and the dma area 
+ * in human readable form.
  */
 
 #ifndef UTCA_DUMMY_DRV_H
@@ -26,7 +29,7 @@
 
 #define UTCADUMMY_NR_DEVS       4 /*create 4 devices*/
 #define UTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
-#define UTCADUMMY_DRV_VERSION_MIN 0 /*dummy driver minor version*/
+#define UTCADUMMY_DRV_VERSION_MIN 1 /*dummy driver minor version*/
 
 //#define UTCADUMMY_VENDOR_ID               0x10EE
 //#define UTCADUMMY_DEVICE_ID               0x0038
@@ -45,7 +48,7 @@
  */
 
 #define UTCADUMMY_N_REGISTERS 32 /* 32 registers, just as a starting point */
-#define UTCADUMMY_DMA_SIZE 4048  /* 4 kilo bytes (= 1k 32bit words) */
+#define UTCADUMMY_DMA_SIZE 4096  /* 4 kilo bytes (= 1k 32bit words) */
 
 typedef struct _utcaDummyData {    
     atomic_t            inUse; /* count how many times the device has been opened in a thread-safe way. */
@@ -58,7 +61,7 @@ typedef struct _utcaDummyData {
     int                 minor;/*I think we need major and minor. Read only, but no mutex required.*/
     int                 major;
 
-    u32 *               registerBar; /* only access when holding the mutex! */
+    u32 *               systemBar; /* only access when holding the mutex! */
     u32 *               dmaBar; /* Just called dma. Only access when holding the mutex! */
   /* not sure, but I think from memory there is no need for a buffer.
      it's in memory anyway.
@@ -77,6 +80,8 @@ typedef struct _utcaDummyData {
    */
 } utcaDummyData;
 
+/* defined in the utcadrummy_drv.c file, but needed in all of the .c files */
+extern utcaDummyData dummyPrivateData[UTCADUMMY_NR_DEVS];
 
 #ifdef __DEBUG_MODE__
 #define dbg_print(format, ...)  do {\
