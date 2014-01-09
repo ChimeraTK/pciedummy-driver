@@ -20,6 +20,7 @@
  */
 #include <linux/cdev.h>
 #include <linux/module.h>
+#include <asm/atomic.h> 
 
 #include "llrfdrv_io.h"
 
@@ -35,16 +36,30 @@
 
 #define __DEBUG_MODE__
 
+/* some defines for the dummy test. We only provide two bars:
+ * bar 0 consits of "registers", each 32 bit word being a register
+ * bar 2 is a "dma" bar where arbitrary data is located There is no real DMA as there is no hardware.
+ * it's just called that for consistency
+ * Idea: bar 0 should be accessed by ioctl, bar 2 is accessed by read/write.
+ * Currently everything is done read/write, as in the original llrfuni.
+ */
+
+#define LLRFDUMMY_N_REGISTERS 32 /* 32 registers, just as a starting point */
+#define LLRFDUMMY_DMA_SIZE 4048  /* 4 kilo bytes (= 1k 32bit words) */
+
 typedef struct _llrfDummyData {    
-    char                inUse;
+    atomic_t            inUse; /* count how many times the device has been opened in a thread-safe way. */
     struct cdev         cdev; /* character device struct */
     struct mutex        devMutex; /* The mutex for concurrent access */
-  /*    u32                 slotNr;
-    struct pci_dev      *dev;
+    u32                 slotNr;
+    /*struct pci_dev      *dev;
     int                 waitFlag;
     wait_queue_head_t   waitDMA;*/
-    int                 minor;/*I think we need major and minor*/
+    int                 minor;/*I think we need major and minor. Read only, but no mutex required.*/
     int                 major;
+
+    u32 *               registerBar; /* only access when holding the mutex! */
+    u32 *               dmaBar; /* Just called dma. Only access when holding the mutex! */
   /* not sure, but I think from memory there is no need for a buffer.
      it's in memory anyway.
     void*               pWriteBuf;
