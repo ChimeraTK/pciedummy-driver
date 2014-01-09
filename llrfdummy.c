@@ -397,3 +397,21 @@ static long llrfDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long a
     return 0;
 }
 */
+
+struct file_operations llrfDummyFileOps = {
+    .owner = THIS_MODULE,
+    .read = llrfDummy_read,
+    .write = llrfDummy_write,
+    /*
+#if LINUX_VERSION_CODE < 0x20613     
+    .ioctl = llrfdrv_ioctl,    
+#else    
+    .unlocked_ioctl = llrfdrv_ioctl,
+#endif
+    */    
+    .open = llrfDummy_open,
+    .release = llrfDummy_release,
+};
+
+module_init(llrfDummy_init_module);
+module_exit(llrfDummy_cleanup_module);
