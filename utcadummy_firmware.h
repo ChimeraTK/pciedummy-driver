@@ -22,7 +22,15 @@ WORD_ADC_ENA                      0x00000001    0x00000044    0x00000004    0x00
 
 #ifndef UTCADUMMY_FIRMWARE_H
 #define UTCADUMMY_FIRMWARE_H
-#include "utcadummy.h"
+
+/* 
+ * Put an extern "C" declaration when compiling with C++. Like this the structs can be used from the included
+ * header files. Having this declatation in the header saves extern "C" declaration in all C++ files using
+ * this header (avoid code duplication and frogetting the declaration).
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define UTCADUMMY_WORD_FIRMWARE       0x00000000
 #define UTCADUMMY_WORD_COMPILATION    0x00000004
@@ -39,11 +47,18 @@ WORD_ADC_ENA                      0x00000001    0x00000044    0x00000004    0x00
 #define UTCADUMMY_WORD_CLK_RST        0x00000040
 #define UTCADUMMY_WORD_ADC_ENA        0x00000044
 
+#ifdef __KERNEL__
+#include "utcadummy.h"
 
-
+/* the driver functions are only usefull in the kernel module */
 void utcadummy_initialiseSystemBar(u32 * barStartAddress);
 
 /* do something when a register has been written */
 void utcadummy_performActionOnWrite( u32 offset, unsigned int barNumber );
+#endif /* __KERNEL__ */
+
+#ifdef __cplusplus
+} /* closing the extern "C" { */
+#endif
 
 #endif /*UTCADUMMY_FIRMWARE_H*/

@@ -13,10 +13,14 @@
 #ifndef UTCA_DUMMY_DRV_H
 #define UTCA_DUMMY_DRV_H
 
-/* FIXME: Where to put the 'extern C' declaration for C++?
- * Here: +simplifies C++, -is not plain C
- * In each C++ include: +unnecessary code duplication, -keeps the C code clean
+/* 
+ * Put an extern "C" declaration when compiling with C++. Like this the structs can be used from the included
+ * header files. Having this declatation in the header saves extern "C" declaration in all C++ files using
+ * this header (avoid code duplication and frogetting the declaration).
  */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Include the io definitions for the regular driver. The interface on the
  * user side should be the same.
@@ -91,5 +95,8 @@ extern utcaDummyData dummyPrivateData[UTCADUMMY_NR_DEVS];
 #define dbg_print(...)
 #endif
 
+#ifdef __cplusplus
+} /* closing the extern "C" { */
+#endif
 
 #endif /* UTCA_DUMMY_DRV_H */
