@@ -1,0 +1,8 @@
+Phase 1: resemble llrfuni
+-implement ioctl like llrfuni
+-prepare registers like sis8300 / standard registers upcie
+-write unit test
+-implement tested features
+
+Phase 2: Extend to functionality of sis8300 and upcie
+-implement generic ioclt (full functionality like sis8300, except ioclt_dma?)

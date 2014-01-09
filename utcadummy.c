@@ -1,5 +1,5 @@
-#include "llrfdummy.h"
-/*#include "llrfdrv_io.h"  already done in llrfdummy.h*/
+#include "utcadummy.h"
+/*#include "utcadrv_io.h"  already done in utcadummy.h*/
 
 /* do we need ALL of these? */
 #include <linux/kernel.h>
@@ -16,81 +16,81 @@
 #include <asm/delay.h> 
 
 MODULE_AUTHOR("Martin Killenberg");
-MODULE_DESCRIPTION("LLRF board dummy driver");
+MODULE_DESCRIPTION("UTCA board dummy driver");
 MODULE_VERSION("0.0.0");
 MODULE_LICENSE("Dual BSD/GPL");
 
 /* 0 means automatic? */
-int llrfDummyMinorNr = 0;
-int llrfDummyMajorNr = 0;
+int utcaDummyMinorNr = 0;
+int utcaDummyMajorNr = 0;
 
-struct class* llrfDummyClass;
+struct class* utcaDummyClass;
 
-struct file_operations llrfDummyFileOps;
-/* static struct pci_driver pci_llrfdrv; no pci access */
+struct file_operations utcaDummyFileOps;
+/* static struct pci_driver pci_utcadrv; no pci access */
 
 /* this is the part I want to avoid, or is it not?*/
-llrfDummyData dummyPrivateData[LLRFDUMMY_NR_DEVS + 1]; /*why +1?*/
+utcaDummyData dummyPrivateData[UTCADUMMY_NR_DEVS + 1]; /*why +1?*/
 
 /* initialise the device when loading the driver */
-static int __init llrfDummy_init_module(void) {
+static int __init utcaDummy_init_module(void) {
     int status;
     dev_t dev;
     int i, j;
 
     dbg_print("%s\n", "MODULE INIT");
-    status = alloc_chrdev_region(&dev, llrfDummyMinorNr, LLRFDUMMY_NR_DEVS, LLRFDUMMY_NAME);
+    status = alloc_chrdev_region(&dev, utcaDummyMinorNr, UTCADUMMY_NR_DEVS, UTCADUMMY_NAME);
     if (status) {
         dbg_print("Error in alloc_chrdev_region: %d\n", status);
         goto err_alloc_chrdev_region;
     }
-    llrfDummyMajorNr = MAJOR(dev);
-    dbg_print("DEV MAJOR NR: %d\n", llrfDummyMajorNr);
-    llrfDummyClass = class_create(THIS_MODULE, LLRFDUMMY_NAME);
-    if (IS_ERR(llrfDummyClass)) {
-        dbg_print("Error in class_create: %ld\n", PTR_ERR(llrfDummyClass));
+    utcaDummyMajorNr = MAJOR(dev);
+    dbg_print("DEV MAJOR NR: %d\n", utcaDummyMajorNr);
+    utcaDummyClass = class_create(THIS_MODULE, UTCADUMMY_NAME);
+    if (IS_ERR(utcaDummyClass)) {
+        dbg_print("Error in class_create: %ld\n", PTR_ERR(utcaDummyClass));
         goto err_class_create;
     }
 
     memset(dummyPrivateData, 0, sizeof (dummyPrivateData));
-    for (i = 0; i < LLRFDUMMY_NR_DEVS + 1; i++) {
-        dev_t deviceNumber = MKDEV(llrfDummyMajorNr, llrfDummyMinorNr + i);
+    for (i = 0; i < UTCADUMMY_NR_DEVS + 1; i++) {
+        dev_t deviceNumber = MKDEV(utcaDummyMajorNr, utcaDummyMinorNr + i);
 	
 	/* before we initialise the character device we have to initialise all the local variables and
 	 * the mutex. These have to be in place before the device file becomes available. */
 	
 	/* try to allocate memory, this might fail */
-	dummyPrivateData[i].registerBar = kmalloc( LLRFDUMMY_N_REGISTERS * sizeof(u32), GFP_KERNEL);
+	dummyPrivateData[i].registerBar = kmalloc( UTCADUMMY_N_REGISTERS * sizeof(u32), GFP_KERNEL);
 	if ( dummyPrivateData[i].registerBar == NULL)
 	{
 	  goto err_allocate_registerBar;
 	}
-	memset(dummyPrivateData[i].registerBar, 0, LLRFDUMMY_N_REGISTERS * sizeof(u32));
-	dummyPrivateData[i].dmaBar = kmalloc(  LLRFDUMMY_DMA_SIZE, GFP_KERNEL);
+	memset(dummyPrivateData[i].registerBar, 0, UTCADUMMY_N_REGISTERS * sizeof(u32));
+	dummyPrivateData[i].dmaBar = kmalloc(  UTCADUMMY_DMA_SIZE, GFP_KERNEL);
 	if ( dummyPrivateData[i].dmaBar == NULL)
 	{
 	  /* free the already allocated memory */
 	  kfree(  dummyPrivateData[i].registerBar );
 	  goto err_allocate_dmaBar;
 	}
-	memset(dummyPrivateData[i].dmaBar, 0, LLRFDUMMY_DMA_SIZE);
+	memset(dummyPrivateData[i].dmaBar, 0, UTCADUMMY_DMA_SIZE);
 
         mutex_init(&dummyPrivateData[i].devMutex);
 	atomic_set(&dummyPrivateData[i].inUse,0);
 	dummyPrivateData[i].slotNr = i;
-	dummyPrivateData[i].minor =  llrfDummyMinorNr + i;
-	dummyPrivateData[i].major = llrfDummyMajorNr;
+	dummyPrivateData[i].minor =  utcaDummyMinorNr + i;
+	dummyPrivateData[i].major = utcaDummyMajorNr;
 
-        cdev_init(&dummyPrivateData[i].cdev, &llrfDummyFileOps);
+        cdev_init(&dummyPrivateData[i].cdev, &utcaDummyFileOps);
         dummyPrivateData[i].cdev.owner = THIS_MODULE;
-        dummyPrivateData[i].cdev.ops = &llrfDummyFileOps;
+        dummyPrivateData[i].cdev.ops = &utcaDummyFileOps;
         status = cdev_add(&dummyPrivateData[i].cdev, deviceNumber, 1);
         if (status) {
             dbg_print("Error in cdev_add: %d\n", status);
             goto err_cdev_init;
         }
 
-	if (device_create(llrfDummyClass, NULL, deviceNumber, NULL, LLRFDUMMY_NAME"s%d", i) == NULL) {
+	if (device_create(utcaDummyClass, NULL, deviceNumber, NULL, UTCADUMMY_NAME"s%d", i) == NULL) {
 	    dbg_print("%s\n", "Error in device_create");
 	    goto err_device_create;
 	}
@@ -113,40 +113,40 @@ err_allocate_registerBar:
     /* Unroll all already registered device files and their mutexes and memory. */
     /* As i still contains the position where the loop stopped we can use it here. */
     for (j = 0; j < i; j++) {      
-      device_destroy(llrfDummyClass, MKDEV(llrfDummyMajorNr, llrfDummyMinorNr + j));
+      device_destroy(utcaDummyClass, MKDEV(utcaDummyMajorNr, utcaDummyMinorNr + j));
       cdev_del(&dummyPrivateData[j].cdev);
       mutex_destroy(&dummyPrivateData[j].devMutex);
       kfree(dummyPrivateData[j].registerBar);
       kfree(dummyPrivateData[j].dmaBar);
     }
-    class_destroy(llrfDummyClass);
+    class_destroy(utcaDummyClass);
 err_class_create:
-    unregister_chrdev_region(MKDEV(llrfDummyMajorNr, llrfDummyMinorNr), LLRFDUMMY_NR_DEVS);
+    unregister_chrdev_region(MKDEV(utcaDummyMajorNr, utcaDummyMinorNr), UTCADUMMY_NR_DEVS);
 err_alloc_chrdev_region:
     return -1;
 
 }
 
-static void __exit llrfDummy_cleanup_module(void) {
+static void __exit utcaDummy_cleanup_module(void) {
     int i = 0;
     dev_t deviceNumber;
     dbg_print("%s\n", "MODULE CLEANUP");
 
-    deviceNumber = MKDEV(llrfDummyMajorNr, llrfDummyMinorNr);
-    for (i = 0; i < LLRFDUMMY_NR_DEVS + 1; i++) {
-        device_destroy(llrfDummyClass, MKDEV(llrfDummyMajorNr, llrfDummyMinorNr + i));
+    deviceNumber = MKDEV(utcaDummyMajorNr, utcaDummyMinorNr);
+    for (i = 0; i < UTCADUMMY_NR_DEVS + 1; i++) {
+        device_destroy(utcaDummyClass, MKDEV(utcaDummyMajorNr, utcaDummyMinorNr + i));
         cdev_del(&dummyPrivateData[i].cdev);
         mutex_destroy(&dummyPrivateData[i].devMutex);
 	kfree(dummyPrivateData[i].registerBar);	
 	kfree(dummyPrivateData[i].dmaBar);
     }
-    class_destroy(llrfDummyClass);
-    unregister_chrdev_region(deviceNumber, LLRFDUMMY_NR_DEVS);
+    class_destroy(utcaDummyClass);
+    unregister_chrdev_region(deviceNumber, UTCADUMMY_NR_DEVS);
 }
 
-static int llrfDummy_open(struct inode *inode, struct file *filp) {
-    llrfDummyData *privData;
-    privData = container_of(inode->i_cdev, llrfDummyData, cdev);
+static int utcaDummy_open(struct inode *inode, struct file *filp) {
+    utcaDummyData *privData;
+    privData = container_of(inode->i_cdev, utcaDummyData, cdev);
     filp->private_data = privData;
 
     // count up inUse
@@ -156,8 +156,8 @@ static int llrfDummy_open(struct inode *inode, struct file *filp) {
     return 0;
 }
 
-static int llrfDummy_release(struct inode *inode, struct file *filp) {
-    llrfDummyData *privData;
+static int utcaDummy_release(struct inode *inode, struct file *filp) {
+    utcaDummyData *privData;
     privData = filp->private_data;
 
     // count down inUse
@@ -167,8 +167,8 @@ static int llrfDummy_release(struct inode *inode, struct file *filp) {
     return 0;
 }
 
-static ssize_t llrfDummy_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos) {
-    llrfDummyData *privData;
+static ssize_t utcaDummy_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos) {
+    utcaDummyData *privData;
     device_rw readReqInfo;
     u32 * barBaseAddress;
     size_t barSize;
@@ -192,11 +192,11 @@ static ssize_t llrfDummy_read(struct file *filp, char __user *buf, size_t count,
     }
 
     if (readReqInfo.mode_rw == RW_INFO) {
-        readReqInfo.offset_rw = LLRFDUMMY_DRV_VERSION_MIN;
-        readReqInfo.data_rw = LLRFDUMMY_DRV_VERSION_MAJ;
+        readReqInfo.offset_rw = UTCADUMMY_DRV_VERSION_MIN;
+        readReqInfo.data_rw = UTCADUMMY_DRV_VERSION_MAJ;
         readReqInfo.barx_rw = privData->slotNr;
-        readReqInfo.mode_rw = LLRFDUMMY_DRV_VERSION_MAJ + 1;
-        readReqInfo.size_rw = LLRFDUMMY_DRV_VERSION_MIN + 1;
+        readReqInfo.mode_rw = UTCADUMMY_DRV_VERSION_MAJ + 1;
+        readReqInfo.size_rw = UTCADUMMY_DRV_VERSION_MIN + 1;
         if (copy_to_user(buf, &readReqInfo, sizeof (device_rw))) {
             mutex_unlock(&privData->devMutex);
             return -EFAULT;
@@ -207,11 +207,11 @@ static ssize_t llrfDummy_read(struct file *filp, char __user *buf, size_t count,
         switch( readReqInfo.barx_rw ){
 	case 0:
 	    barBaseAddress = privData->registerBar;
-	    barSize = LLRFDUMMY_N_REGISTERS*4;
+	    barSize = UTCADUMMY_N_REGISTERS*4;
 	    break;
 	case 2:
 	    barBaseAddress = privData->dmaBar;
-	    barSize = LLRFDUMMY_DMA_SIZE;
+	    barSize = UTCADUMMY_DMA_SIZE;
 	    break;
 	default:
             dbg_print("Incorrect bar number %d, only 0 and 2 are supported\n", readReqInfo.barx_rw);
@@ -248,7 +248,7 @@ static ssize_t llrfDummy_read(struct file *filp, char __user *buf, size_t count,
             return 0;
         }
 	
-	if ( (dma_size + dma_offset) > LLRFDUMMY_DMA_SIZE) {
+	if ( (dma_size + dma_offset) > UTCADUMMY_DMA_SIZE) {
             dbg_print("%s\n", "Reqested dma transfer is too large");
             mutex_unlock(&privData->devMutex);
             return -EFAULT;
@@ -271,8 +271,8 @@ static ssize_t llrfDummy_read(struct file *filp, char __user *buf, size_t count,
 }
 
 
-static ssize_t llrfDummy_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos) {
-    llrfDummyData *privData;
+static ssize_t utcaDummy_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos) {
+    utcaDummyData *privData;
     device_rw writeReqInfo;
     u32 * barBaseAddress;
     size_t barSize;
@@ -297,11 +297,11 @@ static ssize_t llrfDummy_write(struct file *filp, const char __user *buf, size_t
         switch( writeReqInfo.barx_rw ){
 	case 0:
 	    barBaseAddress = privData->registerBar;
-	    barSize = LLRFDUMMY_N_REGISTERS*4;
+	    barSize = UTCADUMMY_N_REGISTERS*4;
 	    break;
 	case 2:
 	    barBaseAddress = privData->dmaBar;
-	    barSize = LLRFDUMMY_DMA_SIZE;
+	    barSize = UTCADUMMY_DMA_SIZE;
 	    break;
 	default:
             dbg_print("Incorrect bar number %d, only 0 and 2 are supported\n", writeReqInfo.barx_rw);
@@ -338,23 +338,23 @@ static ssize_t llrfDummy_write(struct file *filp, const char __user *buf, size_t
 
 /*
 #if LINUX_VERSION_CODE < 0x20613 
-static int llrfDummy_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg) {
+static int utcaDummy_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg) {
 #else
-static long llrfDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
+static long utcaDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
 #endif
-    llrfDummyData                 *privData;
+    utcaDummyData                 *privData;
     int                         status = 0;
     device_ioctrl_data          data;
 
-    if (_IOC_TYPE(cmd) != LLRFDUMMY_IOC) {
+    if (_IOC_TYPE(cmd) != UTCADUMMY_IOC) {
         dbg_print("Incorrect ioctl command %d\n", cmd);
         return -ENOTTY;
     }
-    if (_IOC_NR(cmd) > LLRFDUMMY_IOC_MAXNR) {
+    if (_IOC_NR(cmd) > UTCADUMMY_IOC_MAXNR) {
         dbg_print("Incorrect ioctl command %d\n", cmd);
         return -ENOTTY;
     }
-    if (_IOC_NR(cmd) < LLRFDUMMY_IOC_MINNR) {
+    if (_IOC_NR(cmd) < UTCADUMMY_IOC_MINNR) {
         dbg_print("Incorrect ioctl command %d\n", cmd);
         return -ENOTTY;
     }
@@ -374,7 +374,7 @@ static long llrfDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long a
     }
 
     switch (cmd) {
-        case LLRFDUMMY_PHYSICAL_SLOT:
+        case UTCADUMMY_PHYSICAL_SLOT:
             if (copy_from_user(&data, (device_ioctrl_data*) arg, sizeof(device_ioctrl_data))) {
                 mutex_unlock(&privData->devMutex);
                 return -EFAULT;
@@ -385,17 +385,17 @@ static long llrfDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long a
                 return -EFAULT;
             }
             break;
-        case LLRFDUMMY_DRIVER_VERSION:
-            data.data = LLRFDEV_DUMMY_VERSION_MAJ;
-            data.offset = LLRFDEV_DUMMY_VERSION_MIN;
+        case UTCADUMMY_DRIVER_VERSION:
+            data.data = UTCADEV_DUMMY_VERSION_MAJ;
+            data.offset = UTCADEV_DUMMY_VERSION_MIN;
             if (copy_to_user((device_ioctrl_data*) arg, &data, sizeof(device_ioctrl_data))) {
                 mutex_unlock(&privData->devMutex);
                 return -EFAULT;
             }
             break;
-        case LLRFDUMMY_FIRMWARE_VERSION:
-            data.data = LLRFDEV_DUMMY_VERSION_MAJ + 1;
-            data.offset = LLRFDEV_DUMMY_VERSION_MIN + 1;
+        case UTCADUMMY_FIRMWARE_VERSION:
+            data.data = UTCADEV_DUMMY_VERSION_MAJ + 1;
+            data.offset = UTCADEV_DUMMY_VERSION_MIN + 1;
             if (copy_to_user((device_ioctrl_data*) arg, &data, sizeof(device_ioctrl_data))) {
                 mutex_unlock(&privData->devMutex);
                 return -EFAULT;
@@ -409,20 +409,20 @@ static long llrfDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 }
 */
 
-struct file_operations llrfDummyFileOps = {
+struct file_operations utcaDummyFileOps = {
     .owner = THIS_MODULE,
-    .read = llrfDummy_read,
-    .write = llrfDummy_write,
+    .read = utcaDummy_read,
+    .write = utcaDummy_write,
     /*
 #if LINUX_VERSION_CODE < 0x20613     
-    .ioctl = llrfdrv_ioctl,    
+    .ioctl = utcadrv_ioctl,    
 #else    
-    .unlocked_ioctl = llrfdrv_ioctl,
+    .unlocked_ioctl = utcadrv_ioctl,
 #endif
     */    
-    .open = llrfDummy_open,
-    .release = llrfDummy_release,
+    .open = utcaDummy_open,
+    .release = utcaDummy_release,
 };
 
-module_init(llrfDummy_init_module);
-module_exit(llrfDummy_cleanup_module);
+module_init(utcaDummy_init_module);
+module_exit(utcaDummy_cleanup_module);

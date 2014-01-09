@@ -1,7 +1,7 @@
-obj-m += llrfdummy.o
+obj-m += utcadummy.o
 			    
-#CFLAGS_llrfutc.o = -include $(PWD)/llrfdrvCfg_utc.h	    
-#CFLAGS_llrfadc.o = -include $(PWD)/llrfdrvCfg_sis.h
+#CFLAGS_utcautc.o = -include $(PWD)/utcadrvCfg_utc.h	    
+#CFLAGS_utcaadc.o = -include $(PWD)/utcadrvCfg_sis.h
 
 KVERSION = $(shell uname -r)
 

@@ -7,8 +7,8 @@
  * on any computer.
  */
 
-#ifndef LLRF_DUMMY_DRV_H
-#define LLRF_DUMMY_DRV_H
+#ifndef UTCA_DUMMY_DRV_H
+#define UTCA_DUMMY_DRV_H
 
 /* FIXME: Where to put the 'extern C' declaration for C++?
  * Here: +simplifies C++, -is not plain C
@@ -22,17 +22,17 @@
 #include <linux/module.h>
 #include <asm/atomic.h> 
 
-#include "llrfdrv_io.h"
+#include "utcadrv_io.h"
 
-#define LLRFDUMMY_NR_DEVS       4 /*create 4 devices*/
-#define LLRFDUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
-#define LLRFDUMMY_DRV_VERSION_MIN 0 /*dummy driver minor version*/
+#define UTCADUMMY_NR_DEVS       4 /*create 4 devices*/
+#define UTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
+#define UTCADUMMY_DRV_VERSION_MIN 0 /*dummy driver minor version*/
 
-//#define LLRFDUMMY_VENDOR_ID               0x10EE
-//#define LLRFDUMMY_DEVICE_ID               0x0038
+//#define UTCADUMMY_VENDOR_ID               0x10EE
+//#define UTCADUMMY_DEVICE_ID               0x0038
 
-#define LLRFDUMMY_NAME                    "llrfdummy"
-#define LLRFDUMMY_DBG_MSG_DEV_NAME        "LLRFDUMMY"
+#define UTCADUMMY_NAME                    "utcadummy"
+#define UTCADUMMY_DBG_MSG_DEV_NAME        "UTCADUMMY"
 
 #define __DEBUG_MODE__
 
@@ -44,10 +44,10 @@
  * Currently everything is done read/write, as in the original llrfuni.
  */
 
-#define LLRFDUMMY_N_REGISTERS 32 /* 32 registers, just as a starting point */
-#define LLRFDUMMY_DMA_SIZE 4048  /* 4 kilo bytes (= 1k 32bit words) */
+#define UTCADUMMY_N_REGISTERS 32 /* 32 registers, just as a starting point */
+#define UTCADUMMY_DMA_SIZE 4048  /* 4 kilo bytes (= 1k 32bit words) */
 
-typedef struct _llrfDummyData {    
+typedef struct _utcaDummyData {    
     atomic_t            inUse; /* count how many times the device has been opened in a thread-safe way. */
     struct cdev         cdev; /* character device struct */
     struct mutex        devMutex; /* The mutex for concurrent access */
@@ -75,16 +75,16 @@ typedef struct _llrfDummyData {
         u32             memSize;
     } barInfo[MAX_BAR_NR];
    */
-} llrfDummyData;
+} utcaDummyData;
 
 
 #ifdef __DEBUG_MODE__
 #define dbg_print(format, ...)  do {\
-                                    printk("%s: [%s] " format, LLRFDUMMY_DBG_MSG_DEV_NAME, __FUNCTION__,__VA_ARGS__); \
+                                    printk("%s: [%s] " format, UTCADUMMY_DBG_MSG_DEV_NAME, __FUNCTION__,__VA_ARGS__); \
                                     } while (0);
 #else
 #define dbg_print(...)
 #endif
 
 
-#endif /* LLRF_DUMMY_DRV_H */
+#endif /* UTCA_DUMMY_DRV_H */
