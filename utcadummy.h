@@ -33,13 +33,15 @@ extern "C" {
 
 #define UTCADUMMY_NR_DEVS       4 /*create 4 devices*/
 #define UTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
-#define UTCADUMMY_DRV_VERSION_MIN 3 /*dummy driver minor version*/
+#define UTCADUMMY_DRV_VERSION_MIN 4 /*dummy driver minor version*/
 
 //#define UTCADUMMY_VENDOR_ID               0x10EE
 //#define UTCADUMMY_DEVICE_ID               0x0038
 
 #define UTCADUMMY_NAME                    "utcadummy"
 #define UTCADUMMY_DBG_MSG_DEV_NAME        "UTCADUMMY"
+
+#define UTCADUMMY_DMMY_AS_ASCII 0x444D4D59
 
 #define __DEBUG_MODE__
 

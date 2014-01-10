@@ -6,6 +6,7 @@ void utcadummy_initialiseSystemBar(u32 * systemBarBaseAddress)
   *(systemBarBaseAddress + UTCADUMMY_WORD_COMPILATION/sizeof(u32) ) = UTCADUMMY_DRV_VERSION_MIN;
   *(systemBarBaseAddress + UTCADUMMY_WORD_STATUS     /sizeof(u32) ) = 0; /*is this the value for ok? */
   *(systemBarBaseAddress + UTCADUMMY_WORD_USER       /sizeof(u32) ) = 0; /*let the user do this*/ 
+  *(systemBarBaseAddress + UTCADUMMY_WORD_DUMMY      /sizeof(u32) ) = UTCADUMMY_DMMY_AS_ASCII;
   /* ok, the rest will stay 0. As we zeroed everything during install we leave it like this
    *(systemBarBaseAddress + UTCADUMMY_WORD_CLK_CNT    /sizeof(u32) ) =  
    *(systemBarBaseAddress + UTCADUMMY_WORD_CLK_CNT_0  /sizeof(u32) ) =  
@@ -79,6 +80,9 @@ void  utcadummy_performActionOnWrite( u32 offset, unsigned int barNumber )
       // set back the compilation word. This is read only
     case  UTCADUMMY_WORD_COMPILATION:
       *(systemBarBaseAddress + UTCADUMMY_WORD_COMPILATION/sizeof(u32) ) = UTCADUMMY_DRV_VERSION_MIN;
+      break;
+    case  UTCADUMMY_WORD_DUMMY:
+      *(systemBarBaseAddress + UTCADUMMY_WORD_DUMMY/sizeof(u32) ) = UTCADUMMY_DMMY_AS_ASCII;
       break;
       /* default: do nothing */
   }
