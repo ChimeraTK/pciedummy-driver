@@ -1,10 +1,13 @@
 /* A dummy driver which does not access the PCI bus but features the same
- * interface as the llrfuni driver. All operations are performed in 
+ * interface as the pciedev driver. All operations are performed in 
  * memory.
  * The idea is to have a device to test against with defined behaviour
  * without the need to install hardware.
  * This allows the implementation and execution of unit tests / automated tests
  * on any computer.
+ *
+ * There are five devices created: 4 utcadummy drivers, compatible to pciedev,
+ * and one llrfdummy device (slot 4) which is compatible with llrfuni.
  *
  * For debugging purposes there is a proc file which dumps the register content and the dma area 
  * in human readable form.
@@ -31,14 +34,15 @@ extern "C" {
 
 #include "pciedev_io.h"
 
-#define UTCADUMMY_NR_DEVS       4 /*create 4 devices*/
+#define UTCADUMMY_NR_DEVS       5 /*create 5 devices*/
 #define UTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
-#define UTCADUMMY_DRV_VERSION_MIN 4 /*dummy driver minor version*/
+#define UTCADUMMY_DRV_VERSION_MIN 5 /*dummy driver minor version*/
 
 //#define UTCADUMMY_VENDOR_ID               0x10EE
 //#define UTCADUMMY_DEVICE_ID               0x0038
 
 #define UTCADUMMY_NAME                    "utcadummy"
+#define LLRFDUMMY_NAME                    "llrfdummy"
 #define UTCADUMMY_DBG_MSG_DEV_NAME        "UTCADUMMY"
 
 #define UTCADUMMY_DMMY_AS_ASCII 0x444D4D59

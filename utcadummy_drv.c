@@ -17,9 +17,11 @@
 #include <linux/slab.h> /* kmalloc() */
 #include <asm/delay.h> 
 
+#include "llrfdrv_io_compat.h"
+
 MODULE_AUTHOR("Martin Killenberg");
 MODULE_DESCRIPTION("UTCA board dummy driver");
-MODULE_VERSION("0.0.0");
+MODULE_VERSION("0.5.0");
 MODULE_LICENSE("Dual BSD/GPL");
 
 /* 0 means automatic? */
@@ -29,6 +31,7 @@ int utcaDummyMajorNr = 0;
 struct class* utcaDummyClass;
 
 struct file_operations utcaDummyFileOps;
+struct file_operations llrfDummyFileOps;
 /* static struct pci_driver pci_utcadrv; no pci access */
 
 /* this is the part I want to avoid, or is it not?*/
@@ -86,16 +89,25 @@ static int __init utcaDummy_init_module(void) {
 	dummyPrivateData[i].minor =  utcaDummyMinorNr + i;
 	dummyPrivateData[i].major = utcaDummyMajorNr;
 
-        cdev_init(&dummyPrivateData[i].cdev, &utcaDummyFileOps);
+	/* small "hack" to have different ioct for one device */
+	if (i == 4){
+	  cdev_init(&dummyPrivateData[i].cdev, &llrfDummyFileOps);
+	  dummyPrivateData[i].cdev.ops = &llrfDummyFileOps;
+	}
+	else{
+	  cdev_init(&dummyPrivateData[i].cdev, &utcaDummyFileOps);
+	  dummyPrivateData[i].cdev.ops = &utcaDummyFileOps;
+	}
+
         dummyPrivateData[i].cdev.owner = THIS_MODULE;
-        dummyPrivateData[i].cdev.ops = &utcaDummyFileOps;
         status = cdev_add(&dummyPrivateData[i].cdev, deviceNumber, 1);
         if (status) {
             dbg_print("Error in cdev_add: %d\n", status);
             goto err_cdev_init;
         }
 
-	if (device_create(utcaDummyClass, NULL, deviceNumber, NULL, UTCADUMMY_NAME"s%d", i) == NULL) {
+	if (device_create(utcaDummyClass, NULL, deviceNumber, NULL, 
+			  (i==4?LLRFDUMMY_NAME"s%d":UTCADUMMY_NAME"s%d"), i) == NULL) {
 	    dbg_print("%s\n", "Error in device_create");
 	    goto err_device_create;
 	}
@@ -397,15 +409,12 @@ static long utcaDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long a
             }
             break;
         case PCIEDEV_DRIVER_VERSION:
-            dataStruct.data = UTCADUMMY_DRV_VERSION_MAJ;
-            dataStruct.offset = UTCADUMMY_DRV_VERSION_MIN;
-            if (copy_to_user((device_ioctrl_data*) arg, &dataStruct, sizeof(device_ioctrl_data))) {
-                returnValue = -EFAULT;
-		// mutex will be unlocked directly after the switch
-            }
-            break;
         case PCIEDEV_FIRMWARE_VERSION:
 	  /* dummy driver and firmware version are identical */
+            if (copy_from_user(&dataStruct, (device_ioctrl_data*) arg, sizeof(device_ioctrl_data))) {
+                mutex_unlock(&privateData->devMutex);
+                return -EFAULT;
+            }            
             dataStruct.data = UTCADUMMY_DRV_VERSION_MAJ;
             dataStruct.offset = UTCADUMMY_DRV_VERSION_MIN;
             if (copy_to_user((device_ioctrl_data*) arg, &dataStruct, sizeof(device_ioctrl_data))) {
@@ -437,12 +446,93 @@ static long utcaDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long a
     return returnValue;
 }
 
+/* An alternatice ioctl section for the llrfdummy device.
+ * 
+ * Unfortunately this is a copy and paste hack for backward compatibility and
+ * to be removed. It's not worth the efford to make the constants variables which
+ * can be changed for llrf and pciedev, just to safe some lines of duplicity.
+ * This is a temporary solution!
+ */
+static long llrfDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
+      utcaDummyData                 *privateData;
+      int                         status = 0;
+      device_ioctrl_data          dataStruct;
+      long returnValue = 0;
+
+    if (_IOC_TYPE(cmd) != LLRFDRV_IOC) {
+        dbg_print("Incorrect ioctl command %d\n", cmd);
+        return -ENOTTY;
+    }
+
+    if ( ( (_IOC_NR(cmd) < LLRFDRV_IOC_MINNR) || 
+	   (_IOC_NR(cmd) > LLRFDRV_IOC_MAXNR) ) ) {
+        dbg_print("Incorrect ioctl command %d\n", cmd);
+        return -ENOTTY;
+    }
+
+    if (_IOC_DIR(cmd) & _IOC_READ)
+        status = !access_ok(VERIFY_WRITE, (void __user *) arg, _IOC_SIZE(cmd));
+    else if (_IOC_DIR(cmd) & _IOC_WRITE)
+        status = !access_ok(VERIFY_READ, (void __user *) arg, _IOC_SIZE(cmd));
+    if (status) {
+        dbg_print("Incorrect ioctl command %d\n", cmd);
+        return -EFAULT;
+    }
+
+    privateData = filp->private_data;
+    if (mutex_lock_interruptible(&privateData->devMutex)) {
+        dbg_print("mutex_lock_interruptible %s\n", "- locking attempt was interrupted by a signal");
+        return -ERESTARTSYS;
+    }
+
+    switch (cmd) {
+        case LLRFDRV_PHYSICAL_SLOT:
+            if (copy_from_user(&dataStruct, (device_ioctrl_data*) arg, sizeof(device_ioctrl_data))) {
+                mutex_unlock(&privateData->devMutex);
+                return -EFAULT;
+            }            
+            dataStruct.data = privateData->slotNr;            
+            if (copy_to_user((device_ioctrl_data*) arg, &dataStruct, sizeof(device_ioctrl_data))) {
+                returnValue = -EFAULT;
+		// mutex will be unlocked directly after the switch
+            }
+            break;
+        case LLRFDRV_DRIVER_VERSION:
+        case LLRFDRV_FIRMWARE_VERSION:
+	  /* dummy driver and firmware version are identical */
+            if (copy_from_user(&dataStruct, (device_ioctrl_data*) arg, sizeof(device_ioctrl_data))) {
+                mutex_unlock(&privateData->devMutex);
+                return -EFAULT;
+            }            
+            dataStruct.data = UTCADUMMY_DRV_VERSION_MAJ;
+            dataStruct.offset = UTCADUMMY_DRV_VERSION_MIN;
+            if (copy_to_user((device_ioctrl_data*) arg, &dataStruct, sizeof(device_ioctrl_data))) {
+                returnValue = -EFAULT;
+		// mutex will be unlocked directly after the switch
+            }
+            break;
+        default:
+	  returnValue = -ENOTTY;
+    }
+    mutex_unlock(&privateData->devMutex);
+    return returnValue;
+}
+
 
 struct file_operations utcaDummyFileOps = {
     .owner = THIS_MODULE,
     .read = utcaDummy_read,
     .write = utcaDummy_write,
     .unlocked_ioctl = utcaDummy_ioctl,
+    .open = utcaDummy_open,
+    .release = utcaDummy_release,
+};
+
+struct file_operations llrfDummyFileOps = {
+    .owner = THIS_MODULE,
+    .read = utcaDummy_read,
+    .write = utcaDummy_write,
+    .unlocked_ioctl = llrfDummy_ioctl,
     .open = utcaDummy_open,
     .release = utcaDummy_release,
 };
