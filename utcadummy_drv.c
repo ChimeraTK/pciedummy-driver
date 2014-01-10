@@ -347,28 +347,28 @@ static ssize_t utcaDummy_write(struct file *filp, const char __user *buf, size_t
 }
 
 
-/*
-#if LINUX_VERSION_CODE < 0x20613 
-static int utcaDummy_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg) {
-#else
-static long utcaDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
-#endif
-    utcaDummyData                 *privData;
-    int                         status = 0;
-    device_ioctrl_data          data;
 
-    if (_IOC_TYPE(cmd) != UTCADUMMY_IOC) {
+static long utcaDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
+      utcaDummyData                 *privateData;
+      int                         status = 0;
+      device_ioctrl_data          dataStruct;
+      device_ioctrl_dma           dmaStruct;
+      long returnValue = 0;
+
+    if (_IOC_TYPE(cmd) != PCIEDOOCS_IOC) {
         dbg_print("Incorrect ioctl command %d\n", cmd);
         return -ENOTTY;
     }
-    if (_IOC_NR(cmd) > UTCADUMMY_IOC_MAXNR) {
+
+    /* there are two ranges of ioct commands: 'normal' and ioclt */
+    if ( ( (_IOC_NR(cmd) < PCIEDOOCS_IOC_MINNR) || 
+	   (_IOC_NR(cmd) > PCIEDOOCS_IOC_MAXNR) )  && 
+	 ( (_IOC_NR(cmd) < PCIEDOOCS_IOC_DMA_MINNR) || 
+	   (_IOC_NR(cmd) > PCIEDOOCS_IOC_DMA_MAXNR) ) ) {
         dbg_print("Incorrect ioctl command %d\n", cmd);
         return -ENOTTY;
     }
-    if (_IOC_NR(cmd) < UTCADUMMY_IOC_MINNR) {
-        dbg_print("Incorrect ioctl command %d\n", cmd);
-        return -ENOTTY;
-    }
+
     if (_IOC_DIR(cmd) & _IOC_READ)
         status = !access_ok(VERIFY_WRITE, (void __user *) arg, _IOC_SIZE(cmd));
     else if (_IOC_DIR(cmd) & _IOC_WRITE)
@@ -378,59 +378,71 @@ static long utcaDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long a
         return -EFAULT;
     }
 
-    privData = filp->private_data;
-    if (mutex_lock_interruptible(&privData->devMutex)) {
+    privateData = filp->private_data;
+    if (mutex_lock_interruptible(&privateData->devMutex)) {
         dbg_print("mutex_lock_interruptible %s\n", "- locking attempt was interrupted by a signal");
         return -ERESTARTSYS;
     }
 
     switch (cmd) {
-        case UTCADUMMY_PHYSICAL_SLOT:
-            if (copy_from_user(&data, (device_ioctrl_data*) arg, sizeof(device_ioctrl_data))) {
-                mutex_unlock(&privData->devMutex);
+        case PCIEDEV_PHYSICAL_SLOT:
+            if (copy_from_user(&dataStruct, (device_ioctrl_data*) arg, sizeof(device_ioctrl_data))) {
+                mutex_unlock(&privateData->devMutex);
                 return -EFAULT;
             }            
-            data.data = privData->slotNr;            
-            if (copy_to_user((device_ioctrl_data*) arg, &data, sizeof(device_ioctrl_data))) {
-                mutex_unlock(&privData->devMutex);
-                return -EFAULT;
+            dataStruct.data = privateData->slotNr;            
+            if (copy_to_user((device_ioctrl_data*) arg, &dataStruct, sizeof(device_ioctrl_data))) {
+                returnValue = -EFAULT;
+		// mutex will be unlocked directly after the switch
             }
             break;
-        case UTCADUMMY_DRIVER_VERSION:
-            data.data = UTCADEV_DUMMY_VERSION_MAJ;
-            data.offset = UTCADEV_DUMMY_VERSION_MIN;
-            if (copy_to_user((device_ioctrl_data*) arg, &data, sizeof(device_ioctrl_data))) {
-                mutex_unlock(&privData->devMutex);
-                return -EFAULT;
+        case PCIEDEV_DRIVER_VERSION:
+            dataStruct.data = UTCADUMMY_DRV_VERSION_MAJ;
+            dataStruct.offset = UTCADUMMY_DRV_VERSION_MIN;
+            if (copy_to_user((device_ioctrl_data*) arg, &dataStruct, sizeof(device_ioctrl_data))) {
+                returnValue = -EFAULT;
+		// mutex will be unlocked directly after the switch
             }
             break;
-        case UTCADUMMY_FIRMWARE_VERSION:
-            data.data = UTCADEV_DUMMY_VERSION_MAJ + 1;
-            data.offset = UTCADEV_DUMMY_VERSION_MIN + 1;
-            if (copy_to_user((device_ioctrl_data*) arg, &data, sizeof(device_ioctrl_data))) {
-                mutex_unlock(&privData->devMutex);
+        case PCIEDEV_FIRMWARE_VERSION:
+	  /* dummy driver and firmware version are identical */
+            dataStruct.data = UTCADUMMY_DRV_VERSION_MAJ;
+            dataStruct.offset = UTCADUMMY_DRV_VERSION_MIN;
+            if (copy_to_user((device_ioctrl_data*) arg, &dataStruct, sizeof(device_ioctrl_data))) {
+                returnValue = -EFAULT;
+		// mutex will be unlocked directly after the switch
+            }
+            break;
+        case PCIEDEV_READ_DMA:
+	  // like the current struct-read implementation we ignore the bar information (variable 'pattern')
+            if (copy_from_user(&dmaStruct, (device_ioctrl_dma*) arg, sizeof(device_ioctrl_dma))) {
+                mutex_unlock(&privateData->devMutex);
                 return -EFAULT;
+            }            
+	    if( dmaStruct.dma_offset + dmaStruct.dma_size > UTCADUMMY_DMA_SIZE ) {
+                mutex_unlock(&privateData->devMutex);
+                return -EFAULT;
+	    }
+	    // as there is no real dma we also ignore the control register variable ('cmd')
+
+            if (copy_to_user((u32*) arg, privateData->dmaBar, dmaStruct.dma_size)) {
+                returnValue = -EFAULT;
+		// mutex will be unlocked directly after the switch
             }
             break;
         default:
-            return -ENOTTY;
+	  returnValue = -ENOTTY;
     }
-    mutex_unlock(&privData->devMutex);
-    return 0;
+    mutex_unlock(&privateData->devMutex);
+    return returnValue;
 }
-*/
+
 
 struct file_operations utcaDummyFileOps = {
     .owner = THIS_MODULE,
     .read = utcaDummy_read,
     .write = utcaDummy_write,
-    /*
-#if LINUX_VERSION_CODE < 0x20613     
-    .ioctl = utcadrv_ioctl,    
-#else    
-    .unlocked_ioctl = utcadrv_ioctl,
-#endif
-    */    
+    .unlocked_ioctl = utcaDummy_ioctl,
     .open = utcaDummy_open,
     .release = utcaDummy_release,
 };

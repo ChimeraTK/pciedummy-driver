@@ -29,11 +29,11 @@ extern "C" {
 #include <linux/module.h>
 #include <asm/atomic.h> 
 
-#include "utcadrv_io.h"
+#include "pciedev_io.h"
 
 #define UTCADUMMY_NR_DEVS       4 /*create 4 devices*/
 #define UTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
-#define UTCADUMMY_DRV_VERSION_MIN 2 /*dummy driver minor version*/
+#define UTCADUMMY_DRV_VERSION_MIN 3 /*dummy driver minor version*/
 
 //#define UTCADUMMY_VENDOR_ID               0x10EE
 //#define UTCADUMMY_DEVICE_ID               0x0038
@@ -47,8 +47,7 @@ extern "C" {
  * bar 0 consits of "registers", each 32 bit word being a register
  * bar 2 is a "dma" bar where arbitrary data is located There is no real DMA as there is no hardware.
  * it's just called that for consistency
- * Idea: bar 0 should be accessed by ioctl, bar 2 is accessed by read/write.
- * Currently everything is done read/write, as in the original llrfuni.
+ * Idea: bar 2 should be accessed by ioctl, bar 0 is accessed by read/write.
  */
 
 #define UTCADUMMY_N_REGISTERS 32 /* 32 registers, just as a starting point */
