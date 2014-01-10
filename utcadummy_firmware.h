@@ -55,7 +55,8 @@ extern "C" {
 void utcadummy_initialiseSystemBar(u32 * barStartAddress);
 
 /* do something when a register has been written */
-void utcadummy_performActionOnWrite( u32 offset, unsigned int barNumber );
+  void utcadummy_performActionOnWrite( u32 offset, unsigned int barNumber,
+				       unsigned int slotNumber );
 #endif /* __KERNEL__ */
 
 #ifdef __cplusplus

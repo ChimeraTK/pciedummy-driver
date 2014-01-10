@@ -336,7 +336,8 @@ static ssize_t utcaDummy_write(struct file *filp, const char __user *buf, size_t
         }
         barBaseAddress[writeReqInfo.offset_rw/4] = writeReqInfo.data_rw;
 	// invoce the simulation of the "firmware"
-	utcadummy_performActionOnWrite( writeReqInfo.offset_rw,  writeReqInfo.barx_rw );
+	utcadummy_performActionOnWrite( writeReqInfo.offset_rw,  writeReqInfo.barx_rw,
+					privData->slotNr );
 		
 	/* not mapped memory, no need to wait here:        wmb(); */
         mutex_unlock(&privData->devMutex);

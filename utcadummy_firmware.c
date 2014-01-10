@@ -27,7 +27,8 @@ void utcadummy_initialiseSystemBar(u32 * systemBarBaseAddress)
 }
 
 /* do something when a register has been written */
-void  utcadummy_performActionOnWrite( u32 offset, unsigned int barNumber )
+void  utcadummy_performActionOnWrite( u32 offset, unsigned int barNumber, 
+				      unsigned int slotNumber )
 {
   u32 * systemBarBaseAddress;
   u32 * dmaBarBaseAddress;
@@ -39,8 +40,8 @@ void  utcadummy_performActionOnWrite( u32 offset, unsigned int barNumber )
     return;
   }
 
-  systemBarBaseAddress = dummyPrivateData->systemBar;
-  dmaBarBaseAddress = dummyPrivateData->dmaBar;
+  systemBarBaseAddress = dummyPrivateData[slotNumber].systemBar;
+  dmaBarBaseAddress = dummyPrivateData[slotNumber].dmaBar;
 
   switch (offset)
   {
