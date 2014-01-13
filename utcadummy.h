@@ -34,15 +34,16 @@ extern "C" {
 
 #include "pciedev_io.h"
 
-#define UTCADUMMY_NR_DEVS       5 /*create 5 devices*/
+#define UTCADUMMY_NR_DEVS       6 /*create 6 devices*/
 #define UTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
-#define UTCADUMMY_DRV_VERSION_MIN 5 /*dummy driver minor version*/
+#define UTCADUMMY_DRV_VERSION_MIN 6 /*dummy driver minor version*/
 
 //#define UTCADUMMY_VENDOR_ID               0x10EE
 //#define UTCADUMMY_DEVICE_ID               0x0038
 
 #define UTCADUMMY_NAME                    "utcadummy"
 #define LLRFDUMMY_NAME                    "llrfdummy"
+#define NOIOCTLDUMMY_NAME                 "noioctldummy"
 #define UTCADUMMY_DBG_MSG_DEV_NAME        "UTCADUMMY"
 
 #define UTCADUMMY_DMMY_AS_ASCII 0x444D4D59

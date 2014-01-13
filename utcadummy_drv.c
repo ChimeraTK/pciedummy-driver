@@ -21,7 +21,7 @@
 
 MODULE_AUTHOR("Martin Killenberg");
 MODULE_DESCRIPTION("UTCA board dummy driver");
-MODULE_VERSION("0.5.0");
+MODULE_VERSION("0.6.0");
 MODULE_LICENSE("Dual BSD/GPL");
 
 /* 0 means automatic? */
@@ -32,6 +32,7 @@ struct class* utcaDummyClass;
 
 struct file_operations utcaDummyFileOps;
 struct file_operations llrfDummyFileOps;
+struct file_operations noIoctlDummyFileOps;
 /* static struct pci_driver pci_utcadrv; no pci access */
 
 /* this is the part I want to avoid, or is it not?*/
@@ -60,6 +61,7 @@ static int __init utcaDummy_init_module(void) {
     memset(dummyPrivateData, 0, sizeof (dummyPrivateData));
     for (i = 0; i < UTCADUMMY_NR_DEVS; i++) {
         dev_t deviceNumber = MKDEV(utcaDummyMajorNr, utcaDummyMinorNr + i);
+	const char * deviceNameWithPlaceholder = NULL;
 	
 	/* before we initialise the character device we have to initialise all the local variables and
 	 * the mutex. These have to be in place before the device file becomes available. */
@@ -90,13 +92,21 @@ static int __init utcaDummy_init_module(void) {
 	dummyPrivateData[i].major = utcaDummyMajorNr;
 
 	/* small "hack" to have different ioct for one device */
-	if (i == 4){
-	  cdev_init(&dummyPrivateData[i].cdev, &llrfDummyFileOps);
-	  dummyPrivateData[i].cdev.ops = &llrfDummyFileOps;
-	}
-	else{
-	  cdev_init(&dummyPrivateData[i].cdev, &utcaDummyFileOps);
-	  dummyPrivateData[i].cdev.ops = &utcaDummyFileOps;
+	switch( i ){
+	  case 4:
+	    cdev_init(&dummyPrivateData[i].cdev, &llrfDummyFileOps);
+	    dummyPrivateData[i].cdev.ops = &llrfDummyFileOps;
+	    deviceNameWithPlaceholder = LLRFDUMMY_NAME"s%d";
+	    break;
+	  case 5:
+	    cdev_init(&dummyPrivateData[i].cdev, &noIoctlDummyFileOps);
+	    dummyPrivateData[i].cdev.ops = &noIoctlDummyFileOps;
+	    deviceNameWithPlaceholder = NOIOCTLDUMMY_NAME"s%d";
+	    break;
+	  default:
+	    cdev_init(&dummyPrivateData[i].cdev, &utcaDummyFileOps);
+	    dummyPrivateData[i].cdev.ops = &utcaDummyFileOps;
+	    deviceNameWithPlaceholder = UTCADUMMY_NAME"s%d";
 	}
 
         dummyPrivateData[i].cdev.owner = THIS_MODULE;
@@ -106,8 +116,8 @@ static int __init utcaDummy_init_module(void) {
             goto err_cdev_init;
         }
 
-	if (device_create(utcaDummyClass, NULL, deviceNumber, NULL, 
-			  (i==4?LLRFDUMMY_NAME"s%d":UTCADUMMY_NAME"s%d"), i) == NULL) {
+	if (device_create(utcaDummyClass, NULL, deviceNumber, NULL,
+			  deviceNameWithPlaceholder, i ) == NULL) {
 	    dbg_print("%s\n", "Error in device_create");
 	    goto err_device_create;
 	}
@@ -534,6 +544,14 @@ struct file_operations llrfDummyFileOps = {
     .read = utcaDummy_read,
     .write = utcaDummy_write,
     .unlocked_ioctl = llrfDummy_ioctl,
+    .open = utcaDummy_open,
+    .release = utcaDummy_release,
+};
+
+struct file_operations noIocltDummyFileOps = {
+    .owner = THIS_MODULE,
+    .read = utcaDummy_read,
+    .write = utcaDummy_write,
     .open = utcaDummy_open,
     .release = utcaDummy_release,
 };
