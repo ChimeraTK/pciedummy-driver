@@ -1,0 +1,13 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	:
+
+override_dh_auto_install:
+	dh_install llrfdrv_io_compat.h pciedev_io.h mtcadummy_firmware.h mtcadummy.h mtcadummy_proc.h /usr/src/mtcadummy-0.7.0/
+	dh_install mtcadummy_drv.c mtcadummy_firmware.c mtcadummy_proc.c Makefile /usr/src/mtcadummy-0.7.0/
+	dh_install 10-mtcadummy.rules /etc/udev/rules.d/
+	dh_dkms

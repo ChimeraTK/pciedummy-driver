@@ -1,0 +1,16 @@
+Source: mtcadummy-dkms
+Section: contrib/kernel
+Priority: extra
+Maintainer: Martin Killenberg <martin.killenberg@desy.de>
+Build-Depends: debhelper (>= 7), dkms
+Standards-Version: 
+
+Package: mtcadummy-dkms
+Architecture: all
+Depends: ${misc:Depends}, dkms
+Description: mtcadummy kernel module 
+ A module which does not access PCIe, but mimics devices compatible to
+ picedev and llrfuni.
+ .
+ This package contains the dkms sources. When installed, it will build
+ the module for your kernel.
