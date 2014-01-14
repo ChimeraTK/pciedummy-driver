@@ -35,8 +35,11 @@ extern "C" {
 #include "pciedev_io.h"
 
 #define MTCADUMMY_NR_DEVS       6 /*create 6 devices*/
+
+  /* DO NOT FORGET TO ADAPT BOTH DRIVER AND MODULE VERSION! */
 #define MTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
 #define MTCADUMMY_DRV_VERSION_MIN 7 /*dummy driver minor version*/
+#define MTCADUMMY_MODULE_VERSION "0.7.1"
 
 //#define MTCADUMMY_VENDOR_ID               0x10EE
 //#define MTCADUMMY_DEVICE_ID               0x0038

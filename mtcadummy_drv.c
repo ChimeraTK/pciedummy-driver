@@ -21,7 +21,7 @@
 
 MODULE_AUTHOR("Martin Killenberg");
 MODULE_DESCRIPTION("MTCA board dummy driver");
-MODULE_VERSION("0.7.0");
+MODULE_VERSION(MTCADUMMY_MODULE_VERSION);
 MODULE_LICENSE("Dual BSD/GPL");
 
 /* 0 means automatic? */

@@ -1,0 +1,3 @@
+The debian directory is not ready to use (mtcadummy-dkms.dkms has to be
+created from the template with the right version number). Just run
+'make debian_package', which does all the work for you.

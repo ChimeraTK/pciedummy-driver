@@ -18,3 +18,6 @@ install: all
 
 clean:
 	test ! -d /lib/modules/$(KVERSION) || make -C /lib/modules/$(KVERSION)/build V=1 M=$(PWD) clean
+
+debian_package:
+	./make_debian_package.sh
