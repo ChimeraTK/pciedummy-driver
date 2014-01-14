@@ -1,3 +1,0 @@
-SUBSYSTEM=="utcadummy",	MODE="0666"
-
-

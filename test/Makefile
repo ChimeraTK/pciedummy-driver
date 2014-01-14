@@ -1,2 +1,2 @@
-testUtcaDummy: testUtcaDummy.cpp
+testMtcaDummy: testMtcaDummy.cpp
 	g++ $^ -o $@

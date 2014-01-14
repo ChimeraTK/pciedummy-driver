@@ -5,31 +5,31 @@
 
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
-#include "utcadummy.h"
-#include "utcadummy_proc.h"
+#include "mtcadummy.h"
+#include "mtcadummy_proc.h"
 
-/*extern utcaDummyData dummyPrivateData[UTCADUMMY_NR_DEVS];*/
+/*extern mtcaDummyData dummyPrivateData[MTCADUMMY_NR_DEVS];*/
 
 /*
  * Here are our sequence iteration methods.  Our "position" is
  * simply the device number.
  */
-static void *utcadummy_seq_start(struct seq_file *s, loff_t *pos)
+static void *mtcadummy_seq_start(struct seq_file *s, loff_t *pos)
 {
-        if (*pos >= UTCADUMMY_NR_DEVS)
+        if (*pos >= MTCADUMMY_NR_DEVS)
                 return NULL;   /* No more to read */
         return dummyPrivateData + *pos;
 }
 
-static void *utcadummy_seq_next(struct seq_file *s, void *v, loff_t *pos)
+static void *mtcadummy_seq_next(struct seq_file *s, void *v, loff_t *pos)
 {
         (*pos)++;
-        if (*pos >= UTCADUMMY_NR_DEVS)
+        if (*pos >= MTCADUMMY_NR_DEVS)
                 return NULL;
         return dummyPrivateData + *pos;
 }
 
-static void utcadummy_seq_stop(struct seq_file *s, void *v)
+static void mtcadummy_seq_stop(struct seq_file *s, void *v)
 {
         /* Actually, there's nothing to do here */
 }
@@ -37,9 +37,9 @@ static void utcadummy_seq_stop(struct seq_file *s, void *v)
 /* Print the output of the system bar line by line.
    Print the output of the 
  */
-static int utcadummy_seq_show(struct seq_file *s, void *v)
+static int mtcadummy_seq_show(struct seq_file *s, void *v)
 {
-        utcaDummyData *dummyDeviceData = (utcaDummyData *) v;
+        mtcaDummyData *dummyDeviceData = (mtcaDummyData *) v;
 	unsigned int reg, index;
 	int inUse;
 
@@ -60,7 +60,7 @@ static int utcadummy_seq_show(struct seq_file *s, void *v)
 
         seq_printf(s, "Device %i System Bar:\n", dummyDeviceData->slotNr);
 	seq_printf(s, "Register Content_hex Content_dec:\n");
-	for (reg = 0; reg < UTCADUMMY_N_REGISTERS  ; ++reg)
+	for (reg = 0; reg < MTCADUMMY_N_REGISTERS  ; ++reg)
 	{
 	  seq_printf(s, "0x%08X\t0x%08X\t%d\n",reg, *(dummyDeviceData->systemBar + reg),
 		     *(dummyDeviceData->systemBar + reg));
@@ -68,7 +68,7 @@ static int utcadummy_seq_show(struct seq_file *s, void *v)
 
         seq_printf(s, "\nDevice %i DMA Bar:\n", dummyDeviceData->slotNr);
         seq_printf(s, "Offset Content[offset]  Content[offset+0x4]  Content[offset+0x8] Content[offset+0xC]:\n");
-	for (index = 0; index <= UTCADUMMY_DMA_SIZE/sizeof(u32)-4; index+=4)
+	for (index = 0; index <= MTCADUMMY_DMA_SIZE/sizeof(u32)-4; index+=4)
 	{
 	  seq_printf(s, "0x%08X\t0x%08X\t0x%08X\t0x%08X\t0x%08X\n",
 		     index*sizeof(u32), dummyDeviceData->dmaBar[index],dummyDeviceData->dmaBar[index+1],
@@ -83,28 +83,28 @@ static int utcadummy_seq_show(struct seq_file *s, void *v)
 /*
  * Tie the sequence operators up.
  */
-static struct seq_operations utcadummy_seq_operations = {
-        .start = utcadummy_seq_start,
-        .next  = utcadummy_seq_next,
-        .stop  = utcadummy_seq_stop,
-        .show  = utcadummy_seq_show
+static struct seq_operations mtcadummy_seq_operations = {
+        .start = mtcadummy_seq_start,
+        .next  = mtcadummy_seq_next,
+        .stop  = mtcadummy_seq_stop,
+        .show  = mtcadummy_seq_show
 };
 
 /*
  * Now to implement the /proc file we need only make an open
  * method which sets up the sequence operators.
  */
-static int utcadummy_proc_open(struct inode *inode, struct file *file)
+static int mtcadummy_proc_open(struct inode *inode, struct file *file)
 {
-        return seq_open(file, &utcadummy_seq_operations);
+        return seq_open(file, &mtcadummy_seq_operations);
 }
 
 /*
  * Create a set of file operations for the proc file.
  */
-static struct file_operations utcadummy_proc_opperations = {
+static struct file_operations mtcadummy_proc_opperations = {
         .owner   = THIS_MODULE,
-        .open    = utcadummy_proc_open,
+        .open    = mtcadummy_proc_open,
         .read    = seq_read,
         .llseek  = seq_lseek,
         .release = seq_release
@@ -115,16 +115,16 @@ static struct file_operations utcadummy_proc_opperations = {
  * Actually create (and remove) the /proc file(s). They cannot be static because they are used in the other object.
  */
 
-void utcadummy_create_proc(void)
+void mtcadummy_create_proc(void)
 {
         struct proc_dir_entry *entry;
-        entry = create_proc_entry("utcadummy", 0, NULL);
+        entry = create_proc_entry("mtcadummy", 0, NULL);
         if (entry)
-                entry->proc_fops = &utcadummy_proc_opperations;
+                entry->proc_fops = &mtcadummy_proc_opperations;
 }
 
-void utcadummy_remove_proc(void)
+void mtcadummy_remove_proc(void)
 {
         /* no problem if it was not registered */
-        remove_proc_entry("utcadummy", NULL);
+        remove_proc_entry("mtcadummy", NULL);
 }

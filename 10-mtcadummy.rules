@@ -1,0 +1,3 @@
+SUBSYSTEM=="mtcadummy",	MODE="0666"
+
+

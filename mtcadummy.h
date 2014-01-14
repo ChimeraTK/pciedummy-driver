@@ -6,15 +6,15 @@
  * This allows the implementation and execution of unit tests / automated tests
  * on any computer.
  *
- * There are five devices created: 4 utcadummy drivers, compatible to pciedev,
+ * There are five devices created: 4 mtcadummy drivers, compatible to pciedev,
  * and one llrfdummy device (slot 4) which is compatible with llrfuni.
  *
  * For debugging purposes there is a proc file which dumps the register content and the dma area 
  * in human readable form.
  */
 
-#ifndef UTCA_DUMMY_DRV_H
-#define UTCA_DUMMY_DRV_H
+#ifndef MTCA_DUMMY_DRV_H
+#define MTCA_DUMMY_DRV_H
 
 /* 
  * Put an extern "C" declaration when compiling with C++. Like this the structs can be used from the included
@@ -34,19 +34,19 @@ extern "C" {
 
 #include "pciedev_io.h"
 
-#define UTCADUMMY_NR_DEVS       6 /*create 6 devices*/
-#define UTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
-#define UTCADUMMY_DRV_VERSION_MIN 6 /*dummy driver minor version*/
+#define MTCADUMMY_NR_DEVS       6 /*create 6 devices*/
+#define MTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
+#define MTCADUMMY_DRV_VERSION_MIN 7 /*dummy driver minor version*/
 
-//#define UTCADUMMY_VENDOR_ID               0x10EE
-//#define UTCADUMMY_DEVICE_ID               0x0038
+//#define MTCADUMMY_VENDOR_ID               0x10EE
+//#define MTCADUMMY_DEVICE_ID               0x0038
 
-#define UTCADUMMY_NAME                    "utcadummy"
+#define MTCADUMMY_NAME                    "mtcadummy"
 #define LLRFDUMMY_NAME                    "llrfdummy"
 #define NOIOCTLDUMMY_NAME                 "noioctldummy"
-#define UTCADUMMY_DBG_MSG_DEV_NAME        "UTCADUMMY"
+#define MTCADUMMY_DBG_MSG_DEV_NAME        "MTCADUMMY"
 
-#define UTCADUMMY_DMMY_AS_ASCII 0x444D4D59
+#define MTCADUMMY_DMMY_AS_ASCII 0x444D4D59
 
 #define __DEBUG_MODE__
 
@@ -57,10 +57,10 @@ extern "C" {
  * Idea: bar 2 should be accessed by ioctl, bar 0 is accessed by read/write.
  */
 
-#define UTCADUMMY_N_REGISTERS 32 /* 32 registers, just as a starting point */
-#define UTCADUMMY_DMA_SIZE 4096  /* 4 kilo bytes (= 1k 32bit words) */
+#define MTCADUMMY_N_REGISTERS 32 /* 32 registers, just as a starting point */
+#define MTCADUMMY_DMA_SIZE 4096  /* 4 kilo bytes (= 1k 32bit words) */
 
-typedef struct _utcaDummyData {    
+typedef struct _mtcaDummyData {    
     atomic_t            inUse; /* count how many times the device has been opened in a thread-safe way. */
     struct cdev         cdev; /* character device struct */
     struct mutex        devMutex; /* The mutex for concurrent access */
@@ -88,14 +88,14 @@ typedef struct _utcaDummyData {
         u32             memSize;
     } barInfo[MAX_BAR_NR];
    */
-} utcaDummyData;
+} mtcaDummyData;
 
-/* defined in the utcadrummy_drv.c file, but needed in all of the .c files */
-extern utcaDummyData dummyPrivateData[UTCADUMMY_NR_DEVS];
+/* defined in the mtcadrummy_drv.c file, but needed in all of the .c files */
+extern mtcaDummyData dummyPrivateData[MTCADUMMY_NR_DEVS];
 
 #ifdef __DEBUG_MODE__
 #define dbg_print(format, ...)  do {\
-                                    printk("%s: [%s] " format, UTCADUMMY_DBG_MSG_DEV_NAME, __FUNCTION__,__VA_ARGS__); \
+                                    printk("%s: [%s] " format, MTCADUMMY_DBG_MSG_DEV_NAME, __FUNCTION__,__VA_ARGS__); \
                                     } while (0);
 #else
 #define dbg_print(...)
@@ -105,4 +105,4 @@ extern utcaDummyData dummyPrivateData[UTCADUMMY_NR_DEVS];
 } /* closing the extern "C" { */
 #endif
 
-#endif /* UTCA_DUMMY_DRV_H */
+#endif /* MTCA_DUMMY_DRV_H */

@@ -4,14 +4,13 @@
 #include <exception> 
 
 //FIXME: the io file with the struct should not have a hard coded path.
-// Should it be #include <utcadummy/utcadrv_io.h> ?
-#include "../utcadrv_io.h"
+#include "../pciedev_io.h"
 
 //FIXME: The register information should come from the mapping file, not from the kernel module's source
-// (the generig driver does not have this info, only the dummy has it)
-#include "../utcadummy_firmware.h"
+// (the generic driver does not have this info, only the dummy has it)
+#include "../mtcadummy_firmware.h"
 
-#define DEVICE_NAME "/dev/utcadummys0"
+#define DEVICE_NAME "/dev/mtcadummys0"
 
 // a class to throw which basically is a std::exception, 
 // but as it's derived it allows selective catching
@@ -40,15 +39,15 @@ int main()
   }
 
   // Wait for the user to press enter before continuing.
-  // This allows to read the /proc/utcadummy in the meantime.
-  pause(std::string("Device file is opened. check /proc/utcadummy for the status")+
+  // This allows to read the /proc/mtcadummy in the meantime.
+  pause(std::string("Device file is opened. check /proc/mtcadummy for the status")+
 	" of the bar contents." );
 
   // Turn on the daq. The "firmware" should reset the CLK_RST register to 0,
   // write the number of time samples to CLK_CNT and set CLF_CNT samples 
   // in the dma bar to index^2
   device_rw readWriteInstruction;
-  readWriteInstruction.offset_rw = UTCADUMMY_WORD_ADC_ENA;
+  readWriteInstruction.offset_rw = MTCADUMMY_WORD_ADC_ENA;
   readWriteInstruction.data_rw = 0x1;
   readWriteInstruction.mode_rw = RW_D32;
   readWriteInstruction.barx_rw = 0;
@@ -65,7 +64,7 @@ int main()
     pause("started DAQ.");
 
     // reset the clock counter. Except for the register to write the write instructions stay the same
-    readWriteInstruction.offset_rw = UTCADUMMY_WORD_CLK_RST;
+    readWriteInstruction.offset_rw = MTCADUMMY_WORD_CLK_RST;
     if ( write (fileDescriptor, &readWriteInstruction, sizeof(device_rw)) != sizeof(device_rw) )
     {     
       std::cout << "Error writing to device" << std::endl;
@@ -75,7 +74,7 @@ int main()
     pause("reset the clock counter.");
 
     // turn off the daq. This should just set the corresponding word to 0
-    readWriteInstruction.offset_rw = UTCADUMMY_WORD_ADC_ENA;
+    readWriteInstruction.offset_rw = MTCADUMMY_WORD_ADC_ENA;
     readWriteInstruction.data_rw = 0x1;  
     if ( write (fileDescriptor, &readWriteInstruction, sizeof(device_rw)) != sizeof(device_rw) )
     {     
@@ -85,7 +84,7 @@ int main()
     pause("restarted the daq.");
   
     // turn off the daq. This should just set the corresponding word to 0
-    readWriteInstruction.offset_rw = UTCADUMMY_WORD_ADC_ENA;
+    readWriteInstruction.offset_rw = MTCADUMMY_WORD_ADC_ENA;
     readWriteInstruction.data_rw = 0x0;  
     if ( write (fileDescriptor, &readWriteInstruction, sizeof(device_rw)) != sizeof(device_rw) )
     {     
