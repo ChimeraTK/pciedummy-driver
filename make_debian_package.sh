@@ -20,7 +20,7 @@ CODENAME=`lsb_release -c | sed "{s/Codename:\s*//}"`
 #Use the NAME and EMAIL environment variables to get correct values if needed (usually the email is
 # user@host instead of first.last@institute, for instance killenb@mskpcx18571.desy.de instead of martin.killenberg@desy.de).
 rm -rf debian/changelog
-debchange --create --package mtcadummy-dkms -v ${MTCADUMMY_PACKAGE_VERSION} --distribution ${CODENAME} Debian package for the mtcadummy kernel module.
+debchange --create --package mtcadummy-dkms -v ${MTCADUMMY_PACKAGE_VERSION}-${CODENAME}1 --distribution ${CODENAME} Debian package for the mtcadummy kernel module.
 
 #Now everything is prepared and we can actually build the package.
 #If you have a gpg signature you can remove the -us and -uc flags and sign the package.
