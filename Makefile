@@ -13,6 +13,7 @@ all:
 
 install: all
 	make -C /lib/modules/$(KVERSION)/build V=1 M=$(PWD) modules_install
+	cp 10-mtcadummy.rules /etc/udev/rules.d
 	depmod
 	#cp mtcadrv_io.h /usr/local/include
 

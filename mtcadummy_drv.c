@@ -443,9 +443,16 @@ static long mtcaDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long a
                 mutex_unlock(&privateData->devMutex);
                 return -EFAULT;
 	    }
+	    // check that the offset is a multiple of 4
+	    if( dmaStruct.dma_offset%4 != 0 ) {
+	      mutex_unlock(&privateData->devMutex);
+	      return -EFAULT;
+	    }
 	    // as there is no real dma we also ignore the control register variable ('cmd')
 
-            if (copy_to_user((u32*) arg, privateData->dmaBar, dmaStruct.dma_size)) {
+	    // adding to the dmaBAR, which is a pointer, adds multiples of the word size, so the values added 
+	    // has to be in words, not bytes
+            if (copy_to_user((u32*) arg, privateData->dmaBar + (dmaStruct.dma_offset/4), dmaStruct.dma_size)) {
                 returnValue = -EFAULT;
 		// mutex will be unlocked directly after the switch
             }
