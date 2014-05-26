@@ -255,6 +255,16 @@ static ssize_t mtcaDummy_read(struct file *filp, char __user *buf, size_t count,
             return -EFAULT;
         }
 
+	if (mtcadummy_performPreReadAction( readReqInfo.offset_rw,
+					    readReqInfo.barx_rw,
+					    privData->slotNr )){
+            dbg_print("Simulating read access to bad register at offset %d, %s\n", 
+		      readReqInfo.offset_rw,
+		      "intentinally causing an I/O error");
+            mutex_unlock(&privData->devMutex);
+            return -EIO;	  
+	}
+
         readReqInfo.data_rw = barBaseAddress[readReqInfo.offset_rw/4];
 
         if (copy_to_user(buf, &readReqInfo, sizeof (device_rw))) {
@@ -346,8 +356,15 @@ static ssize_t mtcaDummy_write(struct file *filp, const char __user *buf, size_t
         }
         barBaseAddress[writeReqInfo.offset_rw/4] = writeReqInfo.data_rw;
 	// invoce the simulation of the "firmware"
-	mtcadummy_performActionOnWrite( writeReqInfo.offset_rw,  writeReqInfo.barx_rw,
-					privData->slotNr );
+	if (mtcadummy_performActionOnWrite( writeReqInfo.offset_rw,
+					    writeReqInfo.barx_rw,
+					    privData->slotNr )){
+            dbg_print("Simulating write access to bad register at offset %d, %s.\n",
+		      writeReqInfo.offset_rw,
+		      "intentinally causing an I/O error");
+            mutex_unlock(&privData->devMutex);
+            return -EIO;	  
+	}
 		
 	/* not mapped memory, no need to wait here:        wmb(); */
         mutex_unlock(&privData->devMutex);

@@ -21,14 +21,18 @@ void mtcadummy_initialiseSystemBar(u32 * systemBarBaseAddress)
   /* We set the clock reset bit to 1 to indicate that all counters have been zeroed */
   *(systemBarBaseAddress + MTCADUMMY_WORD_CLK_RST    /sizeof(u32)) = 1;
   /*
-  systemBarBaseAddress + MTCADUMMY_WORD_ADC_ENA    /sizeof(u32) =  
+  *(systemBarBaseAddress + MTCADUMMY_WORD_ADC_ENA    /sizeof(u32)) =  
+  *(systemBarBaseAddress +  MTCADUMMY_BROKEN_REGISTER  /sizeof(u32)) =  
   */
+  
+  /* you can read back the address, but cannot write. */
+  *(systemBarBaseAddress +  MTCADUMMY_BROKEN_WRITE /sizeof(u32)) =  MTCADUMMY_BROKEN_WRITE;
  
 }
 
 /* do something when a register has been written */
-void  mtcadummy_performActionOnWrite( u32 offset, unsigned int barNumber, 
-				      unsigned int slotNumber )
+int mtcadummy_performActionOnWrite( u32 offset, unsigned int barNumber, 
+				     unsigned int slotNumber )
 {
   u32 * systemBarBaseAddress;
   u32 * dmaBarBaseAddress;
@@ -37,7 +41,7 @@ void  mtcadummy_performActionOnWrite( u32 offset, unsigned int barNumber,
   {
     /*Currently only some actions are foreseen when writing to the system bar.
       Just retrun otherwise */
-    return;
+    return 0;
   }
 
   systemBarBaseAddress = dummyPrivateData[slotNumber].systemBar;
@@ -85,6 +89,28 @@ void  mtcadummy_performActionOnWrite( u32 offset, unsigned int barNumber,
     case  MTCADUMMY_WORD_DUMMY:
       *(systemBarBaseAddress + MTCADUMMY_WORD_DUMMY/sizeof(u32) ) = MTCADUMMY_DMMY_AS_ASCII;
       break;
+    case  MTCADUMMY_BROKEN_REGISTER:
+    case  MTCADUMMY_BROKEN_WRITE:
+      return -1;
       /* default: do nothing */
   }
+  return 0;
+}
+
+int mtcadummy_performPreReadAction( u32 offset, unsigned int barNumber,
+				    unsigned int slotNumber ){
+  if (barNumber != 0)
+  {
+    /*Currently only some actions are foreseen when writing to the system bar.
+      Just retrun otherwise */
+    return 0;
+  }
+
+  switch (offset)
+  {
+    case  MTCADUMMY_BROKEN_REGISTER:
+      return -1;
+      /* default: do nothing */
+  }
+  return 0;
 }

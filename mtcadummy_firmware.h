@@ -17,6 +17,10 @@ WORD_CLK_MUX_2                    0x00000001    0x00000028    0x00000004    0x00
 WORD_CLK_MUX_3                    0x00000001    0x0000002C    0x00000004    0x00000000
 WORD_CLK_RST                      0x00000001    0x00000040    0x00000004    0x00000000
 WORD_ADC_ENA                      0x00000001    0x00000044    0x00000004    0x00000000
+#The broken register cannot be read or written, it always causes an I/O error for testing
+BROKEN_REGISTER			  0x00000001    0x00000048    0x00000004    0x00000000
+#Reading is possible, but writing causes an I/O error. Content is the offset.
+BROKEN_WRITE			  0x00000001    0x0000004C    0x00000004    0x00000000
 
 */
 
@@ -47,6 +51,8 @@ extern "C" {
 #define MTCADUMMY_WORD_DUMMY          0x0000003C
 #define MTCADUMMY_WORD_CLK_RST        0x00000040
 #define MTCADUMMY_WORD_ADC_ENA        0x00000044
+#define MTCADUMMY_BROKEN_REGISTER     0x00000048
+#define MTCADUMMY_BROKEN_WRITE        0x0000004C
 
 #ifdef __KERNEL__
 #include "mtcadummy.h"
@@ -54,9 +60,15 @@ extern "C" {
 /* the driver functions are only usefull in the kernel module */
 void mtcadummy_initialiseSystemBar(u32 * barStartAddress);
 
-/* do something when a register has been written */
-  void mtcadummy_performActionOnWrite( u32 offset, unsigned int barNumber,
-				       unsigned int slotNumber );
+/* do something when a register has been written. Returns -1 if the BROKEN_REGISTER
+   is accessed to simulate I/O errors. Otherwise returns 0. */
+int mtcadummy_performActionOnWrite( u32 offset, unsigned int barNumber,
+				    unsigned int slotNumber );
+/* do something before a register is written. This could be some action like 
+   increasing a counter so not always the same value is returned.
+   Currently only used to return -1 when accessing the BROKEN_REGISTER. */
+int mtcadummy_performPreReadAction( u32 offset, unsigned int barNumber,
+				    unsigned int slotNumber );
 #endif /* __KERNEL__ */
 
 #ifdef __cplusplus
