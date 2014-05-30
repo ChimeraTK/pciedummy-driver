@@ -21,6 +21,14 @@ WORD_ADC_ENA                      0x00000001    0x00000044    0x00000004    0x00
 BROKEN_REGISTER			  0x00000001    0x00000048    0x00000004    0x00000000
 #Reading is possible, but writing causes an I/O error. Content is the offset.
 BROKEN_WRITE			  0x00000001    0x0000004C    0x00000004    0x00000000
+#Simulate spi via pcie with handshake:
+# - write 0xff to the SPI_SYNC register
+# - write something to SPI_WRITE
+# - the content of SPI_WRITE is cpoied to SPI_READ and SPI_SYNC is set to 0
+# - if SPI_SYNC is not 0xff when writing to SPI_WRITE SPI_SYNC is set to 0xaa = SPI_SYNC_ERROR
+WORD_SPI_WRITE                    0x00000001    0x00000050    0x00000004    0x00000000
+WORD_SPI_READ                     0x00000001    0x00000054    0x00000004    0x00000000
+WORD_SPI_SYNC                     0x00000001    0x00000058    0x00000004    0x00000000
 
 */
 
@@ -53,6 +61,14 @@ extern "C" {
 #define MTCADUMMY_WORD_ADC_ENA        0x00000044
 #define MTCADUMMY_BROKEN_REGISTER     0x00000048
 #define MTCADUMMY_BROKEN_WRITE        0x0000004C
+#define MTCADUMMY_WORD_SPI_WRITE      0x00000050
+#define MTCADUMMY_WORD_SPI_READ       0x00000054
+#define MTCADUMMY_WORD_SPI_SYNC       0x00000058
+
+#define MTCADUMMY_SPI_SYNC_OK        0
+#define MTCADUMMY_SPI_SYNC_REQUESTED 0xFF
+#define MTCADUMMY_SPI_SYNC_ERROR     0xAA
+
 
 #ifdef __KERNEL__
 #include "mtcadummy.h"

@@ -92,6 +92,17 @@ int mtcadummy_performActionOnWrite( u32 offset, unsigned int barNumber,
     case  MTCADUMMY_BROKEN_REGISTER:
     case  MTCADUMMY_BROKEN_WRITE:
       return -1;
+    case  MTCADUMMY_WORD_SPI_WRITE:
+      if (*(systemBarBaseAddress + MTCADUMMY_WORD_SPI_SYNC/sizeof(u32))
+	  == MTCADUMMY_SPI_SYNC_REQUESTED){
+	*(systemBarBaseAddress + MTCADUMMY_WORD_SPI_READ/sizeof(u32)) =
+	  *(systemBarBaseAddress + MTCADUMMY_WORD_SPI_WRITE/sizeof(u32));
+	*(systemBarBaseAddress + MTCADUMMY_WORD_SPI_SYNC/sizeof(u32)) = 
+	  MTCADUMMY_SPI_SYNC_OK;
+      }else{
+	*(systemBarBaseAddress + MTCADUMMY_WORD_SPI_SYNC/sizeof(u32)) = 
+	  MTCADUMMY_SPI_SYNC_ERROR;
+      }
       /* default: do nothing */
   }
   return 0;
