@@ -5,6 +5,8 @@
 
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/version.h>
+
 #include "mtcadummy.h"
 #include "mtcadummy_proc.h"
 
@@ -117,10 +119,14 @@ static struct file_operations mtcadummy_proc_opperations = {
 
 void mtcadummy_create_proc(void)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
         struct proc_dir_entry *entry;
         entry = create_proc_entry("mtcadummy", 0, NULL);
         if (entry)
                 entry->proc_fops = &mtcadummy_proc_opperations;
+#else
+	proc_create("mtcadummy", 0, NULL, &mtcadummy_proc_opperations);
+#endif
 }
 
 void mtcadummy_remove_proc(void)
