@@ -38,8 +38,8 @@ extern "C" {
 
   /* DO NOT FORGET TO ADAPT BOTH DRIVER AND MODULE VERSION! */
 #define MTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
-#define MTCADUMMY_DRV_VERSION_MIN 8 /*dummy driver minor version*/
-#define MTCADUMMY_MODULE_VERSION "0.8.0"
+#define MTCADUMMY_DRV_VERSION_MIN 9 /*dummy driver minor version*/
+#define MTCADUMMY_MODULE_VERSION "0.9.0"
 
 //#define MTCADUMMY_VENDOR_ID               0x10EE
 //#define MTCADUMMY_DEVICE_ID               0x0038
