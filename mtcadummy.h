@@ -29,9 +29,11 @@ extern "C" {
 /* Include the io definitions for the regular driver. The interface on the
  * user side should be the same.
  */
+#ifdef __KERNEL__
 #include <linux/cdev.h>
 #include <linux/module.h>
 #include <asm/atomic.h> 
+#endif /* #ifdef __KERNEL__ */
 
 #include "pciedev_io.h"
 
@@ -64,6 +66,8 @@ extern "C" {
 
 #define MTCADUMMY_N_REGISTERS 32 /* 32 registers, just as a starting point */
 #define MTCADUMMY_DMA_SIZE 4096  /* 4 kilo bytes (= 1k 32bit words) */
+
+#ifdef __KERNEL__
 
 typedef struct _mtcaDummyData {    
     atomic_t            inUse; /* count how many times the device has been opened in a thread-safe way. */
@@ -105,6 +109,8 @@ extern mtcaDummyData dummyPrivateData[MTCADUMMY_NR_DEVS];
 #else
 #define dbg_print(...)
 #endif
+
+#endif /*  __KERNEL__ */
 
 #ifdef __cplusplus
 } /* closing the extern "C" { */
