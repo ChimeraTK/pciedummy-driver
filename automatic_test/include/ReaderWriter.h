@@ -2,6 +2,7 @@
 #define READER_WRITER_H
 
 #include <exception>
+#include <string>
 #include <stdint.h>
 
 /** a class to throw which basically is a std::exception, 
@@ -12,17 +13,14 @@ class DeviceIOException: public std::exception
 {
 };
 
-/** Just a class for testing. Make sure you feed a valid file descriptor and
-    that the file descriptor is valid while this class is in scope.
-    Sorry, the interface with raw pointers is rather C stype, but 
-    most efficient for driver testing.
-
+/** Just a class for testing. 
     The actual read/write functions are purely virtual so a 
     version with and without struct can be implemented.
 */
 class ReaderWriter{
  public:
-  ReaderWriter(int fileDescriptor);
+  ReaderWriter(std::string const & deviceFileName);
+  ~ReaderWriter();
   
   /// The actual read implementation with struct
   virtual int32_t readSingle(uint32_t offset, uint32_t bar)=0;

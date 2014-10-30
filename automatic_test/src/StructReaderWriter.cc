@@ -9,8 +9,8 @@
 
 // sorry, this is rather C-Style
 
-StructReaderWriter::StructReaderWriter(int fileDescriptor)
-  : ReaderWriter(fileDescriptor){
+StructReaderWriter::StructReaderWriter(std::string const & deviceFileName)
+  : ReaderWriter(deviceFileName){
 }
 
 int32_t StructReaderWriter::readSingle(uint32_t offset, uint32_t bar){
@@ -19,7 +19,7 @@ int32_t StructReaderWriter::readSingle(uint32_t offset, uint32_t bar){
   readInstruction.data_rw = 0;
   readInstruction.mode_rw = RW_D32;
   readInstruction.barx_rw = bar;
-  readInstruction.size_rw = sizeof(device_rw);
+  readInstruction.size_rw = 0;
   readInstruction.rsrvd_rw  = 0;
 
   if ( read(_fileDescriptor, &readInstruction, sizeof(device_rw)) 
@@ -45,7 +45,7 @@ void StructReaderWriter::writeSingle(uint32_t offset, uint32_t bar, int32_t valu
   writeInstruction.data_rw = value;
   writeInstruction.mode_rw = RW_D32;
   writeInstruction.barx_rw = bar;
-  writeInstruction.size_rw = sizeof(device_rw);
+  writeInstruction.size_rw = 0;
   writeInstruction.rsrvd_rw  = 0;
 
   if ( write(_fileDescriptor, &writeInstruction, sizeof(device_rw)) 
@@ -58,7 +58,7 @@ void StructReaderWriter::writeSingle(uint32_t offset, uint32_t bar, int32_t valu
 void StructReaderWriter::writeArea(uint32_t offset, uint32_t bar, uint32_t nWords,
 	       int32_t * writeBuffer){
   for (uint32_t i = 0; i < nWords; ++i){
-    writeSingle(offset +i/sizeof(int32_t), bar, writeBuffer[i]);
+    writeSingle(offset +i*sizeof(int32_t), bar, writeBuffer[i]);
   }
 }
 

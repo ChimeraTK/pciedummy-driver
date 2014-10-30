@@ -10,7 +10,7 @@
 */
 class StructReaderWriter: public ReaderWriter{
  public:
-  StructReaderWriter(int fileDescriptor);
+  StructReaderWriter(std::string const & deviceFileName);
   
   /// The actual read implementation with struct
   int32_t readSingle(uint32_t offset, uint32_t bar);
