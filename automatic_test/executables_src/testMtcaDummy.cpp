@@ -22,6 +22,8 @@ class MtcaDummyTest
   void testReadSingleWithError();
   void testWriteSingle();
   void testWriteSingleWithError();
+  void testReadArea();
+  void testWriteArea();
 
  private:
   boost::shared_ptr<ReaderWriter> _readerWriter;
@@ -43,6 +45,8 @@ public:
     add( BOOST_CLASS_TEST_CASE( &MtcaDummyTest::testReadSingleWithError, mtcaDummyTest ) );
     add( BOOST_CLASS_TEST_CASE( &MtcaDummyTest::testWriteSingle, mtcaDummyTest ) );
     add( BOOST_CLASS_TEST_CASE( &MtcaDummyTest::testWriteSingleWithError, mtcaDummyTest ) );
+    add( BOOST_CLASS_TEST_CASE( &MtcaDummyTest::testReadArea, mtcaDummyTest ) );
+    add( BOOST_CLASS_TEST_CASE( &MtcaDummyTest::testWriteArea, mtcaDummyTest ) );
   }
 };
 
@@ -101,3 +105,50 @@ void MtcaDummyTest::testWriteSingleWithError(){
 		     DeviceIOException );
 }
 
+void MtcaDummyTest::testReadArea(){
+  // we just test in bar 2. As both readSingle and readArea use each other's
+  // implementation, checking both bars in readSingle is enough
+  // Note: with the struct, readArea uses readSingle, without struct it's the other way
+
+  // fill the buffer with something we do not expect
+  std::vector<int32_t> readBuffer(N_WORDS_DMA, 0xB0B0B0B0);
+  static const unsigned int startIndex = 13 ;
+  static const unsigned int nWordsToRead = 5 ;
+
+  _readerWriter->readArea( startIndex*sizeof(int32_t), 2, nWordsToRead, 
+			   &readBuffer[startIndex]);
+
+  for (unsigned int i = 0; i < startIndex; ++i){
+    BOOST_CHECK( readBuffer[i] == 0xB0B0B0B0 );
+  }
+  for (unsigned int i = startIndex; i < startIndex + nWordsToRead; ++i){
+    BOOST_CHECK( readBuffer[i] == i*i );
+  }
+  for (unsigned int i = startIndex + nWordsToRead; i < N_WORDS_DMA; ++i){
+    BOOST_CHECK( readBuffer[i] == 0xB0B0B0B0 );
+  }
+}
+
+void MtcaDummyTest::testWriteArea(){
+  // start the "adc" to set bar 2 back to "helix"
+  _readerWriter->writeSingle(MTCADUMMY_WORD_ADC_ENA, 0, 1);
+
+  // prepare the expected buffer
+  std::vector<int32_t> expectedBuffer = bufferHelix;
+  // modify some words
+  static const unsigned int startIndex = 100 ;
+  static const unsigned int nWordsToRead = 8 ;
+  for (unsigned int i = startIndex; i < startIndex + nWordsToRead; ++i){
+    expectedBuffer[i] = i*i;
+  }
+  
+  // only write the modified part
+  _readerWriter->writeArea( startIndex*sizeof(int32_t), 2, nWordsToRead, 
+			    &expectedBuffer[startIndex]);
+  
+  // now read back the whole buffer and compare
+  std::vector<int32_t> readBuffer(N_WORDS_DMA);
+  _readerWriter->readArea( 0, 2, N_WORDS_DMA, &readBuffer[0]);
+
+  BOOST_CHECK( readBuffer == expectedBuffer );
+}

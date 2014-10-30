@@ -35,7 +35,7 @@ int32_t StructReaderWriter::readSingle(uint32_t offset, uint32_t bar){
 void StructReaderWriter::readArea(uint32_t offset, uint32_t bar, uint32_t nWords,
 	      int32_t * readBuffer){
   for (uint32_t i = 0; i < nWords; ++i){
-    readBuffer[i] = readSingle(offset +i/sizeof(int32_t), bar);
+    readBuffer[i] = readSingle(offset +i*sizeof(int32_t), bar);
   }
 }
 
