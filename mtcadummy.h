@@ -6,8 +6,9 @@
  * This allows the implementation and execution of unit tests / automated tests
  * on any computer.
  *
- * There are five devices created: 4 mtcadummy drivers, compatible to pciedev,
- * and one llrfdummy device (slot 4) which is compatible with llrfuni.
+ * There are six devices created: 4 mtcadummy drivers, compatible to pciedev (slots 0--3),
+ * one llrfdummy device (slot 4) which is compatible with llrfuni, and pciedevdummy
+ * (slot 5) which is compatible with pcieuni
  *
  * For debugging purposes there is a proc file which dumps the register content and the dma area 
  * in human readable form.
@@ -34,12 +35,12 @@ extern "C" {
 
 #include "pciedev_io.h"
 
-#define MTCADUMMY_NR_DEVS       6 /*create 6 devices*/
+#define MTCADUMMY_NR_DEVS       7 /*create 7 devices*/
 
   /* DO NOT FORGET TO ADAPT BOTH DRIVER AND MODULE VERSION! */
 #define MTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
-#define MTCADUMMY_DRV_VERSION_MIN 8 /*dummy driver minor version*/
-#define MTCADUMMY_MODULE_VERSION "0.8.1"
+#define MTCADUMMY_DRV_VERSION_MIN 9 /*dummy driver minor version*/
+#define MTCADUMMY_MODULE_VERSION "0.9.0"
 
 //#define MTCADUMMY_VENDOR_ID               0x10EE
 //#define MTCADUMMY_DEVICE_ID               0x0038
@@ -47,6 +48,7 @@ extern "C" {
 #define MTCADUMMY_NAME                    "mtcadummy"
 #define LLRFDUMMY_NAME                    "llrfdummy"
 #define NOIOCTLDUMMY_NAME                 "noioctldummy"
+#define PCIEUNIDUMMY_NAME                 "pcieunidummy"
 #define MTCADUMMY_DBG_MSG_DEV_NAME        "MTCADUMMY"
 
 #define MTCADUMMY_DMMY_AS_ASCII 0x444D4D59

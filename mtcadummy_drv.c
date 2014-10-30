@@ -1,6 +1,7 @@
 #include "mtcadummy.h"
 #include "mtcadummy_proc.h"
 #include "mtcadummy_firmware.h"
+#include "mtcadummy_rw_no_struct.h"
 /*#include "mtcadrv_io.h"  already done in mtcadummy.h*/
 
 /* do we need ALL of these? */
@@ -18,6 +19,7 @@
 #include <asm/delay.h> 
 
 #include "llrfdrv_io_compat.h"
+#include "pcieuni_io_compat.h"
 
 MODULE_AUTHOR("Martin Killenberg");
 MODULE_DESCRIPTION("MTCA board dummy driver");
@@ -33,9 +35,9 @@ struct class* mtcaDummyClass;
 struct file_operations mtcaDummyFileOps;
 struct file_operations llrfDummyFileOps;
 struct file_operations noIoctlDummyFileOps;
-/* static struct pci_driver pci_mtcadrv; no pci access */
+struct file_operations pcieuniDummyFileOps;
 
-/* this is the part I want to avoid, or is it not?*/
+/* this is the part I want to avoid, or is it not avoidable?*/
 mtcaDummyData dummyPrivateData[MTCADUMMY_NR_DEVS];
 
 /* initialise the device when loading the driver */
@@ -102,6 +104,11 @@ static int __init mtcaDummy_init_module(void) {
 	    cdev_init(&dummyPrivateData[i].cdev, &noIoctlDummyFileOps);
 	    dummyPrivateData[i].cdev.ops = &noIoctlDummyFileOps;
 	    deviceNameWithPlaceholder = NOIOCTLDUMMY_NAME"s%d";
+	    break;
+	  case 6:
+	    cdev_init(&dummyPrivateData[i].cdev, &pcieuniDummyFileOps);
+	    dummyPrivateData[i].cdev.ops = &pcieuniDummyFileOps;
+	    deviceNameWithPlaceholder = PCIEUNIDUMMY_NAME"s%d";
 	    break;
 	  default:
 	    cdev_init(&dummyPrivateData[i].cdev, &mtcaDummyFileOps);
@@ -553,6 +560,101 @@ static long llrfDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long a
     return returnValue;
 }
 
+/* Just another copy of the ioctl sequence. It really is time to phase out the old
+ * drivers.
+ */
+static long pcieuniDummy_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
+      mtcaDummyData               *privateData;
+      int                         status = 0;
+      device_ioctrl_data          dataStruct;
+      device_ioctrl_dma           dmaStruct;
+      long returnValue = 0;
+
+    if (_IOC_TYPE(cmd) != PCIEUNI_IOC) {
+        dbg_print("Incorrect ioctl command %d\n", cmd);
+        return -ENOTTY;
+    }
+
+    /* there are two ranges of ioct commands: 'normal' and ioclt */
+    if ( ( (_IOC_NR(cmd) < PCIEUNI_IOC_MINNR) || 
+	   (_IOC_NR(cmd) > PCIEUNI_IOC_MAXNR) )  && 
+	 ( (_IOC_NR(cmd) < PCIEUNI_IOC_DMA_MINNR) || 
+	   (_IOC_NR(cmd) > PCIEUNI_IOC_DMA_MAXNR) ) ) {
+        dbg_print("Incorrect ioctl command %d\n", cmd);
+        return -ENOTTY;
+    }
+
+    if (_IOC_DIR(cmd) & _IOC_READ)
+        status = !access_ok(VERIFY_WRITE, (void __user *) arg, _IOC_SIZE(cmd));
+    else if (_IOC_DIR(cmd) & _IOC_WRITE)
+        status = !access_ok(VERIFY_READ, (void __user *) arg, _IOC_SIZE(cmd));
+    if (status) {
+        dbg_print("Incorrect ioctl command %d\n", cmd);
+        return -EFAULT;
+    }
+
+    privateData = filp->private_data;
+    if (mutex_lock_interruptible(&privateData->devMutex)) {
+        dbg_print("mutex_lock_interruptible %s\n", "- locking attempt was interrupted by a signal");
+        return -ERESTARTSYS;
+    }
+
+    switch (cmd) {
+        case PCIEUNI_PHYSICAL_SLOT:
+            if (copy_from_user(&dataStruct, (device_ioctrl_data*) arg, sizeof(device_ioctrl_data))) {
+                mutex_unlock(&privateData->devMutex);
+                return -EFAULT;
+            }            
+            dataStruct.data = privateData->slotNr;            
+            if (copy_to_user((device_ioctrl_data*) arg, &dataStruct, sizeof(device_ioctrl_data))) {
+                returnValue = -EFAULT;
+		// mutex will be unlocked directly after the switch
+            }
+            break;
+        case PCIEUNI_DRIVER_VERSION:
+        case PCIEUNI_FIRMWARE_VERSION:
+	  /* dummy driver and firmware version are identical */
+            if (copy_from_user(&dataStruct, (device_ioctrl_data*) arg, sizeof(device_ioctrl_data))) {
+                mutex_unlock(&privateData->devMutex);
+                return -EFAULT;
+            }            
+            dataStruct.data = MTCADUMMY_DRV_VERSION_MAJ;
+            dataStruct.offset = MTCADUMMY_DRV_VERSION_MIN;
+            if (copy_to_user((device_ioctrl_data*) arg, &dataStruct, sizeof(device_ioctrl_data))) {
+                returnValue = -EFAULT;
+		// mutex will be unlocked directly after the switch
+            }
+            break;
+        case PCIEUNI_READ_DMA:
+	  // like the current struct-read implementation we ignore the bar information (variable 'pattern')
+            if (copy_from_user(&dmaStruct, (device_ioctrl_dma*) arg, sizeof(device_ioctrl_dma))) {
+                mutex_unlock(&privateData->devMutex);
+                return -EFAULT;
+            }            
+	    if( dmaStruct.dma_offset + dmaStruct.dma_size > MTCADUMMY_DMA_SIZE ) {
+                mutex_unlock(&privateData->devMutex);
+                return -EFAULT;
+	    }
+	    // check that the offset is a multiple of 4
+	    if( dmaStruct.dma_offset%4 != 0 ) {
+	      mutex_unlock(&privateData->devMutex);
+	      return -EFAULT;
+	    }
+	    // as there is no real dma we also ignore the control register variable ('cmd')
+
+	    // adding to the dmaBAR, which is a pointer, adds multiples of the word size, so the values added 
+	    // has to be in words, not bytes
+            if (copy_to_user((u32*) arg, privateData->dmaBar + (dmaStruct.dma_offset/4), dmaStruct.dma_size)) {
+                returnValue = -EFAULT;
+		// mutex will be unlocked directly after the switch
+            }
+            break;
+        default:
+	  returnValue = -ENOTTY;
+    }
+    mutex_unlock(&privateData->devMutex);
+    return returnValue;
+}
 
 struct file_operations mtcaDummyFileOps = {
     .owner = THIS_MODULE,
@@ -576,6 +678,15 @@ struct file_operations noIocltDummyFileOps = {
     .owner = THIS_MODULE,
     .read = mtcaDummy_read,
     .write = mtcaDummy_write,
+    .open = mtcaDummy_open,
+    .release = mtcaDummy_release,
+};
+
+struct file_operations pcieuniDummyFileOps = {
+    .owner = THIS_MODULE,
+    .read = mtcaDummy_read,
+    .write = mtcaDummy_write_no_struct,
+    .unlocked_ioctl = pcieuniDummy_ioctl,
     .open = mtcaDummy_open,
     .release = mtcaDummy_release,
 };
