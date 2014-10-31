@@ -1,28 +1,28 @@
-#ifndef STRUCT_READER_WRITER_H
-#define STRUCT_READER_WRITER_H
+#ifndef NORMAL_READER_WRITER_H
+#define NORMAL_READER_WRITER_H
 
 #include <exception>
 #include <stdint.h>
 
 #include "ReaderWriter.h"
 
-/** Implementation of the ReaderWriter using a struct.
+/** Implementation of the ReaderWriter without struct.
 */
-class StructReaderWriter: public ReaderWriter{
+class NormalReaderWriter: public ReaderWriter{
  public:
-  StructReaderWriter(std::string const & deviceFileName);
+  NormalReaderWriter(std::string const & deviceFileName);
   
-  /// The actual read implementation with struct
+  /// The actual read implementation with normal
   int32_t readSingle(uint32_t offset, uint32_t bar);
   /// A loop around readSingle
   void readArea(uint32_t offset, uint32_t bar, uint32_t nWords,
 		int32_t * readBuffer);
   
-  /// The actual write implementation with struct 
+  /// The actual write implementation without struct  
   void writeSingle(uint32_t offset, uint32_t bar, int32_t value);
   /// A loop around writeSingle
   void writeArea(uint32_t offset, uint32_t bar, uint32_t nWords,
 		 int32_t const * writeBuffer);
 };
 
-#endif //STRUCT_READER_WRITER_H
+#endif //NORMAL_READER_WRITER_H

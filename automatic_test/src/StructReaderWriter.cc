@@ -25,8 +25,7 @@ int32_t StructReaderWriter::readSingle(uint32_t offset, uint32_t bar){
   if ( read(_fileDescriptor, &readInstruction, sizeof(device_rw)) 
        != sizeof(device_rw) )
     {     
-      std::cerr << "Error reading from device" << std::endl;
-      throw DeviceIOException();
+      throw DeviceIOException("Error reading from device");
     }
 
   return readInstruction.data_rw;
@@ -51,12 +50,11 @@ void StructReaderWriter::writeSingle(uint32_t offset, uint32_t bar, int32_t valu
   if ( write(_fileDescriptor, &writeInstruction, sizeof(device_rw)) 
        != sizeof(device_rw) )
     {     
-      std::cerr << "Error writing to device" << std::endl;
-      throw DeviceIOException();
+      throw DeviceIOException("Error writing to device");
     }
 }
 void StructReaderWriter::writeArea(uint32_t offset, uint32_t bar, uint32_t nWords,
-	       int32_t * writeBuffer){
+	       int32_t const * writeBuffer){
   for (uint32_t i = 0; i < nWords; ++i){
     writeSingle(offset +i*sizeof(int32_t), bar, writeBuffer[i]);
   }

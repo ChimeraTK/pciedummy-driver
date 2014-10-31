@@ -6,6 +6,7 @@ using namespace boost::unit_test_framework;
 
 #include "ReaderWriter.h"
 #include "StructReaderWriter.h"
+#include "NormalReaderWriter.h"
 
 // we use the defines from the original implementation
 #include "mtcadummy.h"
@@ -56,6 +57,8 @@ init_unit_test_suite( int /*argc*/, char* /*argv*/ [] )
   framework::master_test_suite().p_name.value = "MtcaDummy test suite";
   framework::master_test_suite().add( 
     new MtcaDummyTestSuite<StructReaderWriter>(std::string("/dev/")+MTCADUMMY_NAME+"s0") );
+  framework::master_test_suite().add( 
+    new MtcaDummyTestSuite<NormalReaderWriter>(std::string("/dev/")+PCIEUNIDUMMY_NAME+"s6") );
 
   return NULL;
 }
@@ -75,12 +78,11 @@ MtcaDummyTest::MtcaDummyTest( boost::shared_ptr<ReaderWriter> const & readerWrit
 
 void MtcaDummyTest::testReadSingle(){
   BOOST_CHECK( _readerWriter->readSingle(MTCADUMMY_WORD_DUMMY, 0) == MTCADUMMY_DMMY_AS_ASCII );
-  // all bar 2 has to be A, just pick one
-  BOOST_CHECK( _readerWriter->readSingle(5*sizeof(int32_t), 2) == 5*5);
+  // beginning of bar 2 is a helix. Just pick one value to test
+  BOOST_CHECK( _readerWriter->readSingle(8*sizeof(int32_t), 2) == (8*8)) ;
 }
 
 void MtcaDummyTest::testReadSingleWithError(){
-  std::cerr << "The folloging read error is expected:  ";
   BOOST_CHECK_THROW( _readerWriter->readSingle(MTCADUMMY_BROKEN_REGISTER, 0),
 		     DeviceIOException );
   BOOST_CHECK_NO_THROW( _readerWriter->readSingle(MTCADUMMY_BROKEN_WRITE, 0) );
@@ -92,15 +94,13 @@ void MtcaDummyTest::testWriteSingle(){
   BOOST_CHECK( _readerWriter->readSingle(MTCADUMMY_WORD_USER, 0) == wordUser );
 
   uint32_t wordFromBar2 =   _readerWriter->readSingle( 0x20, 2 );
-  _readerWriter->writeSingle( 0x20, 0, ++wordFromBar2);
-  BOOST_CHECK( _readerWriter->readSingle( 0x20, 0) == wordFromBar2 );
+  _readerWriter->writeSingle( 0x20, 2, ++wordFromBar2);
+  BOOST_CHECK( _readerWriter->readSingle( 0x20, 2) == wordFromBar2 );
 }
 
 void MtcaDummyTest::testWriteSingleWithError(){
-  std::cerr << "The folloging read error is expected:  ";
   BOOST_CHECK_THROW( _readerWriter->writeSingle(MTCADUMMY_BROKEN_REGISTER, 0, 42),
 		     DeviceIOException );
-  std::cerr << "The folloging read error is expected:  ";
   BOOST_CHECK_THROW( _readerWriter->writeSingle(MTCADUMMY_BROKEN_WRITE, 0, 42),
 		     DeviceIOException );
 }

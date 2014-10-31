@@ -6,11 +6,22 @@
 #include <stdint.h>
 
 /** a class to throw which basically is a std::exception, 
-    but as it's derived it allows selective catching
+    but as it's derived it allows selective catching,
+    plus it gets the what() message in the constructor
 
 */
-class DeviceIOException: public std::exception
-{
+class DeviceIOException: public std::exception {
+protected:
+    std::string         _message;      /**< exception description*/
+public:
+    DeviceIOException(const std::string & message)
+      : _message(message){
+    }
+    const char* what() const throw(){
+      return _message.c_str();
+    }
+    ~DeviceIOException() throw(){
+    }
 };
 
 /** Just a class for testing. 
@@ -32,7 +43,7 @@ class ReaderWriter{
   virtual void writeSingle(uint32_t offset, uint32_t bar, int32_t value)=0;
   /// A loop around writeSingle
   virtual void writeArea(uint32_t offset, uint32_t bar, uint32_t nWords,
-			 int32_t * writeBuffer)=0;
+			 int32_t const * writeBuffer)=0;
  protected:
   int _fileDescriptor;
 };
