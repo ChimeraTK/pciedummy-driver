@@ -4,6 +4,9 @@
 #include <linux/kernel.h>
 #include <linux/fs.h>
 
+ssize_t mtcaDummy_read_no_struct(struct file *filp, char __user *buf, 
+				 size_t count, loff_t *f_pos);
+
 ssize_t mtcaDummy_write_no_struct(struct file *filp, const char __user *buf, 
 				  size_t count, loff_t *f_pos);
 

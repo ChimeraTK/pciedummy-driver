@@ -117,6 +117,72 @@ int checkAndCalculateTransferInformation( mtcaDummyData const * deviceData,
   return 0;
 }
 
+ssize_t mtcaDummy_read_no_struct(struct file *filp, char __user *buf, size_t count, loff_t *f_pos) {
+  mtcaDummyData *deviceData;
+  transfer_information transferInformation;
+  int transferInfoError;
+
+  deviceData = filp->private_data;
+  
+  /* The checkAndCalculateTransferInformation is only accessing static data in the 
+     deviceData struct. No need to hold the mutex.
+     FIXME: Is this correct? What if the device goes offline in the mean time?
+  */
+  transferInfoError = 
+    checkAndCalculateTransferInformation( deviceData, count, *f_pos, &transferInformation);
+  
+  if (transferInfoError){
+    return transferInfoError;
+  }
+
+  /* now we really want to access, so we need the mutex */
+  if (mutex_lock_interruptible(&deviceData->devMutex)) {
+    printk("mutex_lock_interruptible %s\n", "- locking attempt was interrupted by a signal");
+    return -ERESTARTSYS;
+  }
+  
+  printk("mtcaDummy_read_no_struct: starting copy from user");  
+  
+
+  /* not very efficient, but currently the post-write action is per word */
+  { unsigned int i;
+    for (i = 0; i < transferInformation.nBytesToTransfer/sizeof(int32_t); ++i){
+
+      /* offset in loop is the additional offset due to the writing process */
+      unsigned int offsetInLoop = i*sizeof(int32_t);
+
+      /* invoke the simulation of the "firmware" */
+      if (mtcadummy_performPreReadAction( transferInformation.offset + offsetInLoop,
+					  transferInformation.bar,
+					  deviceData->slotNr )){
+	dbg_print("Simulating read access to bad register at offset %lx, %s\n", 
+		  transferInformation.offset + offsetInLoop,
+		  "intentinally causing an I/O error");
+	mutex_unlock(&deviceData->devMutex);
+	return -EIO;	  
+      }
+   
+      /* buf is a pointer to char, to here we add the offset in bytes */
+      if (copy_to_user(buf + offsetInLoop,
+		       transferInformation.barStart + 
+		       transferInformation.offset/sizeof(uint32_t) +i, 
+		       sizeof(int32_t))){
+	dbg_print("%s\n", "Error in copy_to_user");
+	mutex_unlock(&deviceData->devMutex);
+	return -EFAULT;
+      }
+
+      /* update the f_pos pointer after a successful read */
+      *f_pos += sizeof(u32);
+    }/*for offsetInLoop*/
+  }/*scope of i*/
+
+  printk("mtcaDummy_read_no_struct: copy to user finished");  
+
+  mutex_unlock(&deviceData->devMutex);
+  return transferInformation.nBytesToTransfer;
+}
+
 ssize_t mtcaDummy_write_no_struct(struct file *filp, const char __user *buf, 
 				  size_t count, loff_t *f_pos)
 {

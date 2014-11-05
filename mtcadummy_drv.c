@@ -684,7 +684,7 @@ struct file_operations noIocltDummyFileOps = {
 
 struct file_operations pcieuniDummyFileOps = {
     .owner = THIS_MODULE,
-    .read = mtcaDummy_read,
+    .read = mtcaDummy_read_no_struct,
     .write = mtcaDummy_write_no_struct,
     .unlocked_ioctl = pcieuniDummy_ioctl,
     .open = mtcaDummy_open,
