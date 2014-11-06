@@ -7,7 +7,7 @@ override_dh_auto_build:
 	:
 
 override_dh_auto_install:
-	dh_install llrfdrv_io_compat.h pciedev_io.h mtcadummy_firmware.h mtcadummy.h mtcadummy_proc.h /usr/src/mtcadummy-@MTCADUMMY_PACKAGE_VERSION@/
-	dh_install mtcadummy_drv.c mtcadummy_firmware.c mtcadummy_proc.c Makefile /usr/src/mtcadummy-@MTCADUMMY_PACKAGE_VERSION@/
+	dh_install *.h /usr/src/mtcadummy-@MTCADUMMY_PACKAGE_VERSION@/
+	dh_install *.c Makefile /usr/src/mtcadummy-@MTCADUMMY_PACKAGE_VERSION@/
 	dh_install 10-mtcadummy.rules /etc/udev/rules.d/
 	dh_dkms
