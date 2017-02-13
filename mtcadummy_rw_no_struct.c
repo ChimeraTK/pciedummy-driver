@@ -6,6 +6,7 @@
 #include <linux/interrupt.h>
 #include <linux/sched.h>
 #include <linux/device.h>
+#include <asm/uaccess.h>
 
 #include "mtcadummy.h"
 #include "mtcadummy_firmware.h"
