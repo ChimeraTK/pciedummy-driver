@@ -13,7 +13,7 @@
 #include <linux/interrupt.h>
 #include <linux/sched.h>
 #include <linux/device.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 /*#include <linux/workqueue.h>*/
 #include <linux/slab.h> /* kmalloc() */
 #include <asm/delay.h> 
