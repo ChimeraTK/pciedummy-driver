@@ -139,7 +139,7 @@ static int __init mtcaDummy_init_module(void) {
     /* undo the steps for device i. As i is still at the same position where it was when we jumped 
        out of the loop, we can use it here. */
 err_device_create:
-    cdev_del(&dummyPrivateData[j].cdev);
+    cdev_del(&dummyPrivateData[i].cdev);
 err_cdev_init:
     mutex_destroy(&dummyPrivateData[i].devMutex);
     kfree(dummyPrivateData[i].systemBar);
