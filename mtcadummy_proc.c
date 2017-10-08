@@ -72,7 +72,7 @@ static int mtcadummy_seq_show(struct seq_file *s, void *v)
         seq_printf(s, "Offset Content[offset]  Content[offset+0x4]  Content[offset+0x8] Content[offset+0xC]:\n");
 	for (index = 0; index <= MTCADUMMY_DMA_SIZE/sizeof(u32)-4; index+=4)
 	{
-	  seq_printf(s, "0x%08X\t0x%08X\t0x%08X\t0x%08X\t0x%08X\n",
+	  seq_printf(s, "0x%08lX\t0x%08X\t0x%08X\t0x%08X\t0x%08X\n",
 		     index*sizeof(u32), dummyDeviceData->dmaBar[index],dummyDeviceData->dmaBar[index+1],
 		     dummyDeviceData->dmaBar[index+2],dummyDeviceData->dmaBar[index+3]);
 	}
