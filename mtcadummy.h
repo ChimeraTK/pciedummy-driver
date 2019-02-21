@@ -1,26 +1,27 @@
 /* A dummy driver which does not access the PCI bus but features the same
- * interface as the pciedev driver. All operations are performed in 
+ * interface as the pciedev driver. All operations are performed in
  * memory.
  * The idea is to have a device to test against with defined behaviour
  * without the need to install hardware.
  * This allows the implementation and execution of unit tests / automated tests
  * on any computer.
  *
- * There are six devices created: 4 mtcadummy drivers, compatible to pciedev (slots 0--3),
- * one llrfdummy device (slot 4) which is compatible with llrfuni, and pciedevdummy
- * (slot 5) which is compatible with pcieuni
+ * There are six devices created: 4 mtcadummy drivers, compatible to pciedev
+ * (slots 0--3), one llrfdummy device (slot 4) which is compatible with llrfuni,
+ * and pciedevdummy (slot 5) which is compatible with pcieuni
  *
- * For debugging purposes there is a proc file which dumps the register content and the dma area 
- * in human readable form.
+ * For debugging purposes there is a proc file which dumps the register content
+ * and the dma area in human readable form.
  */
 
 #ifndef MTCA_DUMMY_DRV_H
 #define MTCA_DUMMY_DRV_H
 
-/* 
- * Put an extern "C" declaration when compiling with C++. Like this the structs can be used from the included
- * header files. Having this declatation in the header saves extern "C" declaration in all C++ files using
- * this header (avoid code duplication and forgetting the declaration).
+/*
+ * Put an extern "C" declaration when compiling with C++. Like this the structs
+ * can be used from the included header files. Having this declatation in the
+ * header saves extern "C" declaration in all C++ files using this header (avoid
+ * code duplication and forgetting the declaration).
  */
 #ifdef __cplusplus
 extern "C" {
@@ -30,16 +31,16 @@ extern "C" {
  * user side should be the same.
  */
 #ifdef __KERNEL__
+#include <asm/atomic.h>
 #include <linux/cdev.h>
 #include <linux/module.h>
-#include <asm/atomic.h> 
 #endif /* #ifdef __KERNEL__ */
 
 #include "pciedev_io.h"
 
-#define MTCADUMMY_NR_DEVS       7 /*create 7 devices*/
+#define MTCADUMMY_NR_DEVS 7 /*create 7 devices*/
 
-  /* DO NOT FORGET TO ADAPT BOTH DRIVER AND MODULE VERSION! */
+/* DO NOT FORGET TO ADAPT BOTH DRIVER AND MODULE VERSION! */
 #define MTCADUMMY_DRV_VERSION_MAJ 0 /*dummy driver major version*/
 #define MTCADUMMY_DRV_VERSION_MIN 9 /*dummy driver minor version*/
 #define MTCADUMMY_MODULE_VERSION "0.9.2"
@@ -47,11 +48,11 @@ extern "C" {
 //#define MTCADUMMY_VENDOR_ID               0x10EE
 //#define MTCADUMMY_DEVICE_ID               0x0038
 
-#define MTCADUMMY_NAME                    "mtcadummy"
-#define LLRFDUMMY_NAME                    "llrfdummy"
-#define NOIOCTLDUMMY_NAME                 "noioctldummy"
-#define PCIEUNIDUMMY_NAME                 "pcieunidummy"
-#define MTCADUMMY_DBG_MSG_DEV_NAME        "MTCADUMMY"
+#define MTCADUMMY_NAME "mtcadummy"
+#define LLRFDUMMY_NAME "llrfdummy"
+#define NOIOCTLDUMMY_NAME "noioctldummy"
+#define PCIEUNIDUMMY_NAME "pcieunidummy"
+#define MTCADUMMY_DBG_MSG_DEV_NAME "MTCADUMMY"
 
 #define MTCADUMMY_DMMY_AS_ASCII 0x444D4D59
 
@@ -59,9 +60,9 @@ extern "C" {
 
 /* some defines for the dummy test. We only provide two bars:
  * bar 0 consits of "registers", each 32 bit word being a register
- * bar 2 is a "dma" bar where arbitrary data is located There is no real DMA as there is no hardware.
- * it's just called that for consistency
- * Idea: bar 2 should be accessed by ioctl, bar 0 is accessed by read/write.
+ * bar 2 is a "dma" bar where arbitrary data is located There is no real DMA as
+ * there is no hardware. it's just called that for consistency Idea: bar 2
+ * should be accessed by ioctl, bar 0 is accessed by read/write.
  */
 
 #define MTCADUMMY_N_REGISTERS 32 /* 32 registers, just as a starting point */
@@ -69,27 +70,29 @@ extern "C" {
 
 #ifdef __KERNEL__
 
-typedef struct _mtcaDummyData {    
-    atomic_t            inUse; /* count how many times the device has been opened in a thread-safe way. */
-    struct cdev         cdev; /* character device struct */
-    struct mutex        devMutex; /* The mutex for concurrent access */
-    u32                 slotNr;
-    /*struct pci_dev      *dev;
-    int                 waitFlag;
-    wait_queue_head_t   waitDMA;*/
-    int                 minor;/*I think we need major and minor. Read only, but no mutex required.*/
-    int                 major;
+typedef struct _mtcaDummyData {
+  atomic_t inUse;        /* count how many times the device has been opened in a
+                            thread-safe way. */
+  struct cdev cdev;      /* character device struct */
+  struct mutex devMutex; /* The mutex for concurrent access */
+  u32 slotNr;
+  /*struct pci_dev      *dev;
+  int                 waitFlag;
+  wait_queue_head_t   waitDMA;*/
+  int minor; /*I think we need major and minor. Read only, but no mutex
+                required.*/
+  int major;
 
-    u32 *               systemBar; /* only access when holding the mutex! */
-    u32 *               dmaBar; /* Just called dma. Only access when holding the mutex! */
+  u32 *systemBar; /* only access when holding the mutex! */
+  u32 *dmaBar;    /* Just called dma. Only access when holding the mutex! */
   /* not sure, but I think from memory there is no need for a buffer.
      it's in memory anyway.
     void*               pWriteBuf;
-	u32                 pWriteBufOrder;*/
-    
+        u32                 pWriteBufOrder;*/
+
   /* this is in the ddrfdev.h. I try to avoid explicit bar handling like this.
      Maybe it's needed. I don't see clearly yet.
-    struct {                
+    struct {
         u32             resStart;
         u32             resEnd;
         u32             resFlag;
@@ -103,9 +106,11 @@ typedef struct _mtcaDummyData {
 extern mtcaDummyData dummyPrivateData[MTCADUMMY_NR_DEVS];
 
 #ifdef __DEBUG_MODE__
-#define dbg_print(format, ...)  do {\
-                                    printk("%s: [%s] " format, MTCADUMMY_DBG_MSG_DEV_NAME, __FUNCTION__,__VA_ARGS__); \
-                                    } while (0);
+#define dbg_print(format, ...)                                                 \
+  do {                                                                         \
+    printk("%s: [%s] " format, MTCADUMMY_DBG_MSG_DEV_NAME, __FUNCTION__,       \
+           __VA_ARGS__);                                                       \
+  } while (0);
 #else
 #define dbg_print(...)
 #endif

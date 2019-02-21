@@ -2,89 +2,89 @@
  *
  * Information taken from the flash_mtca_demo_sis8300.map file in libmap
 
-#custom name                      size (words)  offset in bar size (bytes)  bar (only took 0 here)
-WORD_FIRMWARE                     0x00000001    0x00000000    0x00000004    0x00000000
-WORD_COMPILATION                  0x00000001    0x00000004    0x00000004    0x00000000
-WORD_STATUS                       0x00000001    0x00000008    0x00000004    0x00000000
-WORD_USER                         0x00000001    0x0000000C    0x00000004    0x00000000
-WORD_CLK_CNT                      0x00000002    0x00000010    0x00000008    0x00000000
-WORD_CLK_CNT_0                    0x00000001    0x00000010    0x00000004    0x00000000
-WORD_CLK_CNT_1                    0x00000001    0x00000014    0x00000004    0x00000000
-WORD_CLK_MUX                      0x00000004    0x00000020    0x00000010    0x00000000
-WORD_CLK_MUX_0                    0x00000001    0x00000020    0x00000004    0x00000000
-WORD_CLK_MUX_1                    0x00000001    0x00000024    0x00000004    0x00000000
-WORD_CLK_MUX_2                    0x00000001    0x00000028    0x00000004    0x00000000
-WORD_CLK_MUX_3                    0x00000001    0x0000002C    0x00000004    0x00000000
-WORD_CLK_RST                      0x00000001    0x00000040    0x00000004    0x00000000
-WORD_ADC_ENA                      0x00000001    0x00000044    0x00000004    0x00000000
-#The broken register cannot be read or written, it always causes an I/O error for testing
-BROKEN_REGISTER			  0x00000001    0x00000048    0x00000004    0x00000000
-#Reading is possible, but writing causes an I/O error. Content is the offset.
-BROKEN_WRITE			  0x00000001    0x0000004C    0x00000004    0x00000000
-#Simulate spi via pcie with handshake:
-# - write 0xff to the SPI_SYNC register
-# - write something to SPI_WRITE
-# - the content of SPI_WRITE is cpoied to SPI_READ and SPI_SYNC is set to 0
-# - if SPI_SYNC is not 0xff when writing to SPI_WRITE SPI_SYNC is set to 0xaa = SPI_SYNC_ERROR
-WORD_SPI_WRITE                    0x00000001    0x00000050    0x00000004    0x00000000
-WORD_SPI_READ                     0x00000001    0x00000054    0x00000004    0x00000000
-WORD_SPI_SYNC                     0x00000001    0x00000058    0x00000004    0x00000000
+#custom name                      size (words)  offset in bar size (bytes)  bar
+(only took 0 here) WORD_FIRMWARE                     0x00000001    0x00000000
+0x00000004    0x00000000 WORD_COMPILATION                  0x00000001 0x00000004
+0x00000004    0x00000000 WORD_STATUS                       0x00000001 0x00000008
+0x00000004    0x00000000 WORD_USER                         0x00000001 0x0000000C
+0x00000004    0x00000000 WORD_CLK_CNT                      0x00000002 0x00000010
+0x00000008    0x00000000 WORD_CLK_CNT_0                    0x00000001 0x00000010
+0x00000004    0x00000000 WORD_CLK_CNT_1                    0x00000001 0x00000014
+0x00000004    0x00000000 WORD_CLK_MUX                      0x00000004 0x00000020
+0x00000010    0x00000000 WORD_CLK_MUX_0                    0x00000001 0x00000020
+0x00000004    0x00000000 WORD_CLK_MUX_1                    0x00000001 0x00000024
+0x00000004    0x00000000 WORD_CLK_MUX_2                    0x00000001 0x00000028
+0x00000004    0x00000000 WORD_CLK_MUX_3                    0x00000001 0x0000002C
+0x00000004    0x00000000 WORD_CLK_RST                      0x00000001 0x00000040
+0x00000004    0x00000000 WORD_ADC_ENA                      0x00000001 0x00000044
+0x00000004    0x00000000 #The broken register cannot be read or written, it
+always causes an I/O error for testing
+BROKEN_REGISTER			  0x00000001    0x00000048    0x00000004
+0x00000000 #Reading is possible, but writing causes an I/O error. Content is the
+offset. BROKEN_WRITE			  0x00000001    0x0000004C 0x00000004
+0x00000000 #Simulate spi via pcie with handshake: # - write 0xff to the SPI_SYNC
+register # - write something to SPI_WRITE # - the content of SPI_WRITE is cpoied
+to SPI_READ and SPI_SYNC is set to 0 # - if SPI_SYNC is not 0xff when writing to
+SPI_WRITE SPI_SYNC is set to 0xaa = SPI_SYNC_ERROR WORD_SPI_WRITE 0x00000001
+0x00000050    0x00000004    0x00000000 WORD_SPI_READ 0x00000001    0x00000054
+0x00000004    0x00000000 WORD_SPI_SYNC                     0x00000001 0x00000058
+0x00000004    0x00000000
 
 */
 
 #ifndef MTCADUMMY_FIRMWARE_H
 #define MTCADUMMY_FIRMWARE_H
 
-/* 
- * Put an extern "C" declaration when compiling with C++. Like this the structs can be used from the included
- * header files. Having this declatation in the header saves extern "C" declaration in all C++ files using
- * this header (avoid code duplication and frogetting the declaration).
+/*
+ * Put an extern "C" declaration when compiling with C++. Like this the structs
+ * can be used from the included header files. Having this declatation in the
+ * header saves extern "C" declaration in all C++ files using this header (avoid
+ * code duplication and frogetting the declaration).
  */
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MTCADUMMY_WORD_FIRMWARE       0x00000000
-#define MTCADUMMY_WORD_COMPILATION    0x00000004
-#define MTCADUMMY_WORD_STATUS         0x00000008
-#define MTCADUMMY_WORD_USER           0x0000000C
-#define MTCADUMMY_WORD_CLK_CNT        0x00000010
-#define MTCADUMMY_WORD_CLK_CNT_0      0x00000010
-#define MTCADUMMY_WORD_CLK_CNT_1      0x00000014
-#define MTCADUMMY_WORD_CLK_MUX        0x00000020
-#define MTCADUMMY_WORD_CLK_MUX_0      0x00000020
-#define MTCADUMMY_WORD_CLK_MUX_1      0x00000024
-#define MTCADUMMY_WORD_CLK_MUX_2      0x00000028
-#define MTCADUMMY_WORD_CLK_MUX_3      0x0000002C
-#define MTCADUMMY_WORD_DUMMY          0x0000003C
-#define MTCADUMMY_WORD_CLK_RST        0x00000040
-#define MTCADUMMY_WORD_ADC_ENA        0x00000044
-#define MTCADUMMY_BROKEN_REGISTER     0x00000048
-#define MTCADUMMY_BROKEN_WRITE        0x0000004C
-#define MTCADUMMY_WORD_SPI_WRITE      0x00000050
-#define MTCADUMMY_WORD_SPI_READ       0x00000054
-#define MTCADUMMY_WORD_SPI_SYNC       0x00000058
+#define MTCADUMMY_WORD_FIRMWARE 0x00000000
+#define MTCADUMMY_WORD_COMPILATION 0x00000004
+#define MTCADUMMY_WORD_STATUS 0x00000008
+#define MTCADUMMY_WORD_USER 0x0000000C
+#define MTCADUMMY_WORD_CLK_CNT 0x00000010
+#define MTCADUMMY_WORD_CLK_CNT_0 0x00000010
+#define MTCADUMMY_WORD_CLK_CNT_1 0x00000014
+#define MTCADUMMY_WORD_CLK_MUX 0x00000020
+#define MTCADUMMY_WORD_CLK_MUX_0 0x00000020
+#define MTCADUMMY_WORD_CLK_MUX_1 0x00000024
+#define MTCADUMMY_WORD_CLK_MUX_2 0x00000028
+#define MTCADUMMY_WORD_CLK_MUX_3 0x0000002C
+#define MTCADUMMY_WORD_DUMMY 0x0000003C
+#define MTCADUMMY_WORD_CLK_RST 0x00000040
+#define MTCADUMMY_WORD_ADC_ENA 0x00000044
+#define MTCADUMMY_BROKEN_REGISTER 0x00000048
+#define MTCADUMMY_BROKEN_WRITE 0x0000004C
+#define MTCADUMMY_WORD_SPI_WRITE 0x00000050
+#define MTCADUMMY_WORD_SPI_READ 0x00000054
+#define MTCADUMMY_WORD_SPI_SYNC 0x00000058
 
-#define MTCADUMMY_SPI_SYNC_OK        0
+#define MTCADUMMY_SPI_SYNC_OK 0
 #define MTCADUMMY_SPI_SYNC_REQUESTED 0xFF
-#define MTCADUMMY_SPI_SYNC_ERROR     0xAA
-
+#define MTCADUMMY_SPI_SYNC_ERROR 0xAA
 
 #ifdef __KERNEL__
 #include "mtcadummy.h"
 
 /* the driver functions are only usefull in the kernel module */
-void mtcadummy_initialiseSystemBar(u32 * barStartAddress);
+void mtcadummy_initialiseSystemBar(u32 *barStartAddress);
 
-/* do something when a register has been written. Returns -1 if the BROKEN_REGISTER
-   is accessed to simulate I/O errors. Otherwise returns 0. */
-int mtcadummy_performActionOnWrite( u32 offset, unsigned int barNumber,
-				    unsigned int slotNumber );
-/* do something before a register is written. This could be some action like 
+/* do something when a register has been written. Returns -1 if the
+   BROKEN_REGISTER is accessed to simulate I/O errors. Otherwise returns 0. */
+int mtcadummy_performActionOnWrite(u32 offset, unsigned int barNumber,
+                                   unsigned int slotNumber);
+/* do something before a register is written. This could be some action like
    increasing a counter so not always the same value is returned.
    Currently only used to return -1 when accessing the BROKEN_REGISTER. */
-int mtcadummy_performPreReadAction( u32 offset, unsigned int barNumber,
-				    unsigned int slotNumber );
+int mtcadummy_performPreReadAction(u32 offset, unsigned int barNumber,
+                                   unsigned int slotNumber);
 #endif /* __KERNEL__ */
 
 #ifdef __cplusplus

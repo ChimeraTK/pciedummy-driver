@@ -7,5 +7,3 @@ void mtcadummy_create_proc(void);
 void mtcadummy_remove_proc(void);
 
 #endif /*MTCADUMMY_PROC_H*/
-
-
