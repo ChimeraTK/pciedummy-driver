@@ -71,20 +71,18 @@ extern "C" {
 #define MTCADUMMY_SPI_SYNC_ERROR 0xAA
 
 #ifdef __KERNEL__
-#include "mtcadummy.h"
+#  include "mtcadummy.h"
 
 /* the driver functions are only usefull in the kernel module */
-void mtcadummy_initialiseSystemBar(u32 *barStartAddress);
+void mtcadummy_initialiseSystemBar(u32* barStartAddress);
 
 /* do something when a register has been written. Returns -1 if the
    BROKEN_REGISTER is accessed to simulate I/O errors. Otherwise returns 0. */
-int mtcadummy_performActionOnWrite(u32 offset, unsigned int barNumber,
-                                   unsigned int slotNumber);
+int mtcadummy_performActionOnWrite(u32 offset, unsigned int barNumber, unsigned int slotNumber);
 /* do something before a register is written. This could be some action like
    increasing a counter so not always the same value is returned.
    Currently only used to return -1 when accessing the BROKEN_REGISTER. */
-int mtcadummy_performPreReadAction(u32 offset, unsigned int barNumber,
-                                   unsigned int slotNumber);
+int mtcadummy_performPreReadAction(u32 offset, unsigned int barNumber, unsigned int slotNumber);
 #endif /* __KERNEL__ */
 
 #ifdef __cplusplus

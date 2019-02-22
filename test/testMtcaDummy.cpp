@@ -29,18 +29,15 @@ int main() {
   // open the device
   int fileDescriptor = open(DEVICE_NAME, O_RDWR);
 
-  if (fileDescriptor < 0) {
-    std::cout << "Could not open file " << DEVICE_NAME
-              << ". Check that the udev rules are installed and the "
+  if(fileDescriptor < 0) {
+    std::cout << "Could not open file " << DEVICE_NAME << ". Check that the udev rules are installed and the "
               << "kernel module is loaded!" << std::endl;
     return 1;
   }
 
   // Wait for the user to press enter before continuing.
   // This allows to read the /proc/mtcadummy in the meantime.
-  pause(std::string(
-            "Device file is opened. check /proc/mtcadummy for the status") +
-        " of the bar contents.");
+  pause(std::string("Device file is opened. check /proc/mtcadummy for the status") + " of the bar contents.");
 
   // Turn on the daq. The "firmware" should reset the CLK_RST register to 0,
   // write the number of time samples to CLK_CNT and set CLF_CNT samples
@@ -54,8 +51,7 @@ int main() {
   readWriteInstruction.rsrvd_rw = 0;
 
   try {
-    if (write(fileDescriptor, &readWriteInstruction, sizeof(device_rw)) !=
-        sizeof(device_rw)) {
+    if(write(fileDescriptor, &readWriteInstruction, sizeof(device_rw)) != sizeof(device_rw)) {
       std::cout << "Error writing to device" << std::endl;
       throw DeviceIOException();
     }
@@ -65,8 +61,7 @@ int main() {
     // reset the clock counter. Except for the register to write the write
     // instructions stay the same
     readWriteInstruction.offset_rw = MTCADUMMY_WORD_CLK_RST;
-    if (write(fileDescriptor, &readWriteInstruction, sizeof(device_rw)) !=
-        sizeof(device_rw)) {
+    if(write(fileDescriptor, &readWriteInstruction, sizeof(device_rw)) != sizeof(device_rw)) {
       std::cout << "Error writing to device" << std::endl;
       throw DeviceIOException();
     }
@@ -76,8 +71,7 @@ int main() {
     // turn off the daq. This should just set the corresponding word to 0
     readWriteInstruction.offset_rw = MTCADUMMY_WORD_ADC_ENA;
     readWriteInstruction.data_rw = 0x1;
-    if (write(fileDescriptor, &readWriteInstruction, sizeof(device_rw)) !=
-        sizeof(device_rw)) {
+    if(write(fileDescriptor, &readWriteInstruction, sizeof(device_rw)) != sizeof(device_rw)) {
       std::cout << "Error writing to device" << std::endl;
       throw DeviceIOException();
     }
@@ -86,18 +80,14 @@ int main() {
     // turn off the daq. This should just set the corresponding word to 0
     readWriteInstruction.offset_rw = MTCADUMMY_WORD_ADC_ENA;
     readWriteInstruction.data_rw = 0x0;
-    if (write(fileDescriptor, &readWriteInstruction, sizeof(device_rw)) !=
-        sizeof(device_rw)) {
+    if(write(fileDescriptor, &readWriteInstruction, sizeof(device_rw)) != sizeof(device_rw)) {
       std::cout << "Error writing to device" << std::endl;
       throw DeviceIOException();
     }
     pause("Turned off the daq.");
-
-  }catch( DeviceIOException & /*variable name not needed. a std::exception does not provide much info*/)
-  {
-    std::cout
-        << "Quitting execution due to IO exception when working with the device"
-        << std::endl;
+  }
+  catch(DeviceIOException& /*variable name not needed. a std::exception does not provide much info*/) {
+    std::cout << "Quitting execution due to IO exception when working with the device" << std::endl;
   }
 
   // close the device

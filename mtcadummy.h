@@ -31,9 +31,9 @@ extern "C" {
  * user side should be the same.
  */
 #ifdef __KERNEL__
-#include <asm/atomic.h>
-#include <linux/cdev.h>
-#include <linux/module.h>
+#  include <asm/atomic.h>
+#  include <linux/cdev.h>
+#  include <linux/module.h>
 #endif /* #ifdef __KERNEL__ */
 
 #include "pciedev_io.h"
@@ -83,8 +83,8 @@ typedef struct _mtcaDummyData {
                 required.*/
   int major;
 
-  u32 *systemBar; /* only access when holding the mutex! */
-  u32 *dmaBar;    /* Just called dma. Only access when holding the mutex! */
+  u32* systemBar; /* only access when holding the mutex! */
+  u32* dmaBar;    /* Just called dma. Only access when holding the mutex! */
   /* not sure, but I think from memory there is no need for a buffer.
      it's in memory anyway.
     void*               pWriteBuf;
@@ -105,15 +105,14 @@ typedef struct _mtcaDummyData {
 /* defined in the mtcadrummy_drv.c file, but needed in all of the .c files */
 extern mtcaDummyData dummyPrivateData[MTCADUMMY_NR_DEVS];
 
-#ifdef __DEBUG_MODE__
-#define dbg_print(format, ...)                                                 \
-  do {                                                                         \
-    printk("%s: [%s] " format, MTCADUMMY_DBG_MSG_DEV_NAME, __FUNCTION__,       \
-           __VA_ARGS__);                                                       \
-  } while (0);
-#else
-#define dbg_print(...)
-#endif
+#  ifdef __DEBUG_MODE__
+#    define dbg_print(format, ...)                                                                                     \
+      do {                                                                                                             \
+        printk("%s: [%s] " format, MTCADUMMY_DBG_MSG_DEV_NAME, __FUNCTION__, __VA_ARGS__);                             \
+      } while(0);
+#  else
+#    define dbg_print(...)
+#  endif
 
 #endif /*  __KERNEL__ */
 

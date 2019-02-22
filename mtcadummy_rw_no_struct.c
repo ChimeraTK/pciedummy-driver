@@ -29,15 +29,13 @@ typedef struct _transfer_information {
  *  Returns a negative value in case of error, 0 upon success.
  */
 int checkAndCalculateTransferInformation(
-    mtcaDummyData const *deviceData, size_t count, loff_t virtualOffset,
-    transfer_information *transferInformation) {
-
+    mtcaDummyData const* deviceData, size_t count, loff_t virtualOffset, transfer_information* transferInformation) {
   /* check the input data. Only 32 bit reads are supported */
-  if (virtualOffset % 4) {
+  if(virtualOffset % 4) {
     printk("%s\n", "Incorrect position, has the be a multiple of 4");
     return -EFAULT;
   }
-  if (count % 4) {
+  if(count % 4) {
     printk("%s\n", "Incorrect size, has the be a multiple of 4");
     return -EFAULT;
   }
@@ -63,38 +61,35 @@ int checkAndCalculateTransferInformation(
   /* get the bar's start and end address */
   /* FIXME: organise the information as arrays, not as individual variables, and
    * you might get rid of this block */
-  switch (transferInformation->bar) {
-  case 0:
-    transferInformation->barStart = deviceData->systemBar;
-    transferInformation->barSizeInBytes = MTCADUMMY_N_REGISTERS * 4;
-    break;
-  case 2:
-    transferInformation->barStart = deviceData->dmaBar;
-    transferInformation->barSizeInBytes = MTCADUMMY_DMA_SIZE;
-    break;
-  case 1:
-  case 3:
-  case 4:
-  case 5:
-    transferInformation->barStart = 0;
-    transferInformation->barSizeInBytes = 0;
+  switch(transferInformation->bar) {
+    case 0:
+      transferInformation->barStart = deviceData->systemBar;
+      transferInformation->barSizeInBytes = MTCADUMMY_N_REGISTERS * 4;
+      break;
+    case 2:
+      transferInformation->barStart = deviceData->dmaBar;
+      transferInformation->barSizeInBytes = MTCADUMMY_DMA_SIZE;
+      break;
+    case 1:
+    case 3:
+    case 4:
+    case 5:
+      transferInformation->barStart = 0;
+      transferInformation->barSizeInBytes = 0;
 
-  default:
-    printk("MTCADUMMY_WRITE_NO_STRUCT: Invalid bar number %d\n",
-           transferInformation->bar);
-    return -EFAULT;
+    default:
+      printk("MTCADUMMY_WRITE_NO_STRUCT: Invalid bar number %d\n", transferInformation->bar);
+      return -EFAULT;
   }
 
-  if (!transferInformation->barStart) {
+  if(!transferInformation->barStart) {
     printk("BAR %d not implemented in this device", transferInformation->bar);
     return -EFAULT;
   }
 
   /* When adding to a pointer, the + operator expects number of items, not the
    * size in bytes */
-  transferInformation->barEnd =
-      transferInformation->barStart +
-      transferInformation->barSizeInBytes / sizeof(u32);
+  transferInformation->barEnd = transferInformation->barStart + transferInformation->barSizeInBytes / sizeof(u32);
 
   /*
   printk("mtcadummy::checkAndCalculateTransferInformation: barStart %p, barSize
@@ -103,7 +98,7 @@ int checkAndCalculateTransferInformation(
   */
 
   /* check that writing does not start after the end of the bar */
-  if (transferInformation->offset > transferInformation->barSizeInBytes) {
+  if(transferInformation->offset > transferInformation->barSizeInBytes) {
     printk("%s\n", "Cannot start writing after the end of the bar.");
     return -EFAULT;
   }
@@ -111,11 +106,9 @@ int checkAndCalculateTransferInformation(
   /* limit the number of transferred by to the end of the bar. */
   /* The second line is safe because we checked before that offset <=
    * barSizeInBytes */
-  transferInformation->nBytesToTransfer =
-      ((transferInformation->barSizeInBytes <
-        transferInformation->offset + count)
-           ? transferInformation->barSizeInBytes - transferInformation->offset
-           : count);
+  transferInformation->nBytesToTransfer = ((transferInformation->barSizeInBytes < transferInformation->offset + count) ?
+          transferInformation->barSizeInBytes - transferInformation->offset :
+          count);
 
   /*
   printk("mtcadummy::checkAndCalculateTransferInformation:  nBytesToTransfer %x,
@@ -125,9 +118,8 @@ int checkAndCalculateTransferInformation(
   return 0;
 }
 
-ssize_t mtcaDummy_read_no_struct(struct file *filp, char __user *buf,
-                                 size_t count, loff_t *f_pos) {
-  mtcaDummyData *deviceData;
+ssize_t mtcaDummy_read_no_struct(struct file* filp, char __user* buf, size_t count, loff_t* f_pos) {
+  mtcaDummyData* deviceData;
   transfer_information transferInformation;
   int transferInfoError;
 
@@ -137,17 +129,15 @@ ssize_t mtcaDummy_read_no_struct(struct file *filp, char __user *buf,
      the deviceData struct. No need to hold the mutex.
      FIXME: Is this correct? What if the device goes offline in the mean time?
   */
-  transferInfoError = checkAndCalculateTransferInformation(
-      deviceData, count, *f_pos, &transferInformation);
+  transferInfoError = checkAndCalculateTransferInformation(deviceData, count, *f_pos, &transferInformation);
 
-  if (transferInfoError) {
+  if(transferInfoError) {
     return transferInfoError;
   }
 
   /* now we really want to access, so we need the mutex */
-  if (mutex_lock_interruptible(&deviceData->devMutex)) {
-    printk("mutex_lock_interruptible %s\n",
-           "- locking attempt was interrupted by a signal");
+  if(mutex_lock_interruptible(&deviceData->devMutex)) {
+    printk("mutex_lock_interruptible %s\n", "- locking attempt was interrupted by a signal");
     return -ERESTARTSYS;
   }
 
@@ -156,28 +146,24 @@ ssize_t mtcaDummy_read_no_struct(struct file *filp, char __user *buf,
   /* not very efficient, but currently the post-write action is per word */
   {
     unsigned int i;
-    for (i = 0; i < transferInformation.nBytesToTransfer / sizeof(int32_t);
-         ++i) {
-
+    for(i = 0; i < transferInformation.nBytesToTransfer / sizeof(int32_t); ++i) {
       /* offset in loop is the additional offset due to the writing process */
       unsigned int offsetInLoop = i * sizeof(int32_t);
 
       /* invoke the simulation of the "firmware" */
-      if (mtcadummy_performPreReadAction(
-              transferInformation.offset + offsetInLoop,
-              transferInformation.bar, deviceData->slotNr)) {
+      if(mtcadummy_performPreReadAction(
+             transferInformation.offset + offsetInLoop, transferInformation.bar, deviceData->slotNr)) {
         dbg_print("Simulating read access to bad register at offset %lx, %s\n",
-                  transferInformation.offset + offsetInLoop,
-                  "intentinally causing an I/O error");
+            transferInformation.offset + offsetInLoop,
+            "intentinally causing an I/O error");
         mutex_unlock(&deviceData->devMutex);
         return -EIO;
       }
 
       /* buf is a pointer to char, to here we add the offset in bytes */
-      if (copy_to_user(buf + offsetInLoop,
-                       transferInformation.barStart +
-                           transferInformation.offset / sizeof(uint32_t) + i,
-                       sizeof(int32_t))) {
+      if(copy_to_user(buf + offsetInLoop,
+             transferInformation.barStart + transferInformation.offset / sizeof(uint32_t) + i,
+             sizeof(int32_t))) {
         dbg_print("%s\n", "Error in copy_to_user");
         mutex_unlock(&deviceData->devMutex);
         return -EFAULT;
@@ -194,9 +180,8 @@ ssize_t mtcaDummy_read_no_struct(struct file *filp, char __user *buf,
   return transferInformation.nBytesToTransfer;
 }
 
-ssize_t mtcaDummy_write_no_struct(struct file *filp, const char __user *buf,
-                                  size_t count, loff_t *f_pos) {
-  mtcaDummyData *deviceData;
+ssize_t mtcaDummy_write_no_struct(struct file* filp, const char __user* buf, size_t count, loff_t* f_pos) {
+  mtcaDummyData* deviceData;
   transfer_information transferInformation;
   int transferInfoError;
 
@@ -206,17 +191,15 @@ ssize_t mtcaDummy_write_no_struct(struct file *filp, const char __user *buf,
      the deviceData struct. No need to hold the mutex.
      FIXME: Is this correct? What if the device goes offline in the mean time?
   */
-  transferInfoError = checkAndCalculateTransferInformation(
-      deviceData, count, *f_pos, &transferInformation);
+  transferInfoError = checkAndCalculateTransferInformation(deviceData, count, *f_pos, &transferInformation);
 
-  if (transferInfoError) {
+  if(transferInfoError) {
     return transferInfoError;
   }
 
   /* now we really want to access, so we need the mutex */
-  if (mutex_lock_interruptible(&deviceData->devMutex)) {
-    printk("mutex_lock_interruptible %s\n",
-           "- locking attempt was interrupted by a signal");
+  if(mutex_lock_interruptible(&deviceData->devMutex)) {
+    printk("mutex_lock_interruptible %s\n", "- locking attempt was interrupted by a signal");
     return -ERESTARTSYS;
   }
 
@@ -242,27 +225,22 @@ ssize_t mtcaDummy_write_no_struct(struct file *filp, const char __user *buf,
   /* not very efficient, but currently the post-write action is per word */
   {
     unsigned int i;
-    for (i = 0; i < transferInformation.nBytesToTransfer / sizeof(int32_t);
-         ++i) {
+    for(i = 0; i < transferInformation.nBytesToTransfer / sizeof(int32_t); ++i) {
       /* offset in loop is the additional offset due to the writing process */
       unsigned int offsetInLoop = i * sizeof(int32_t);
       /* adding to the barStart pointer has to be in words, not in bytes */
-      if (copy_from_user(
-              (void *)(transferInformation.barStart +
-                       transferInformation.offset / sizeof(uint32_t) + i),
-              /* buf is a pointer to char, to here we add the offset in bytes */
-              buf + offsetInLoop, sizeof(int32_t))) {
+      if(copy_from_user((void*)(transferInformation.barStart + transferInformation.offset / sizeof(uint32_t) + i),
+             /* buf is a pointer to char, to here we add the offset in bytes */
+             buf + offsetInLoop, sizeof(int32_t))) {
         dbg_print("%s\n", "Error in copy_from_user");
         mutex_unlock(&deviceData->devMutex);
         return -EFAULT;
       }
 
       /* invoke the simulation of the "firmware" */
-      if (mtcadummy_performActionOnWrite(
-              transferInformation.offset + offsetInLoop,
-              transferInformation.bar, deviceData->slotNr)) {
-        dbg_print(
-            "Simulating write access to bad register at offset %ld, %s.\n",
+      if(mtcadummy_performActionOnWrite(
+             transferInformation.offset + offsetInLoop, transferInformation.bar, deviceData->slotNr)) {
+        dbg_print("Simulating write access to bad register at offset %ld, %s.\n",
             transferInformation.offset + offsetInLoop,
             "intentinally causing an I/O error");
         mutex_unlock(&deviceData->devMutex);
