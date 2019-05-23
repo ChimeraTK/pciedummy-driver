@@ -413,10 +413,14 @@ static long mtcaDummy_ioctl(struct file* filp, unsigned int cmd, unsigned long a
     return -ENOTTY;
   }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
   if(_IOC_DIR(cmd) & _IOC_READ)
     status = !access_ok(VERIFY_WRITE, (void __user*)arg, _IOC_SIZE(cmd));
   else if(_IOC_DIR(cmd) & _IOC_WRITE)
     status = !access_ok(VERIFY_READ, (void __user*)arg, _IOC_SIZE(cmd));
+#else
+  status = !access_ok((void __user*)arg, _IOC_SIZE(cmd));
+#endif
   if(status) {
     dbg_print("Incorrect ioctl command %d\n", cmd);
     return -EFAULT;
@@ -510,10 +514,14 @@ static long llrfDummy_ioctl(struct file* filp, unsigned int cmd, unsigned long a
     return -ENOTTY;
   }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
   if(_IOC_DIR(cmd) & _IOC_READ)
     status = !access_ok(VERIFY_WRITE, (void __user*)arg, _IOC_SIZE(cmd));
   else if(_IOC_DIR(cmd) & _IOC_WRITE)
     status = !access_ok(VERIFY_READ, (void __user*)arg, _IOC_SIZE(cmd));
+#else
+  status = !access_ok((void __user*)arg, _IOC_SIZE(cmd));
+#endif
   if(status) {
     dbg_print("Incorrect ioctl command %d\n", cmd);
     return -EFAULT;
@@ -580,10 +588,14 @@ static long pcieuniDummy_ioctl(struct file* filp, unsigned int cmd, unsigned lon
     return -ENOTTY;
   }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
   if(_IOC_DIR(cmd) & _IOC_READ)
     status = !access_ok(VERIFY_WRITE, (void __user*)arg, _IOC_SIZE(cmd));
   else if(_IOC_DIR(cmd) & _IOC_WRITE)
     status = !access_ok(VERIFY_READ, (void __user*)arg, _IOC_SIZE(cmd));
+#else
+  status = !access_ok((void __user*)arg, _IOC_SIZE(cmd));
+#endif
   if(status) {
     dbg_print("Incorrect ioctl command %d\n", cmd);
     return -EFAULT;
