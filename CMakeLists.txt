@@ -1,5 +1,5 @@
 project("pciedummy")
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.5)
 
 # Find all potential kernel modules
 file(GLOB MODULES LIST_DIRECTORIES true /lib/modules/*/build)
