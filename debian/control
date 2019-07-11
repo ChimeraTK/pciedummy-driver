@@ -1,9 +1,9 @@
 Source: mtcadummy-dkms
 Section: contrib/kernel
-Priority: extra
+Priority: optional
 Maintainer: Martin Killenberg <martin.killenberg@desy.de>
-Build-Depends: debhelper (>= 7), dkms
-Standards-Version: 
+Build-Depends: debhelper (>= 9), dkms
+Standards-Version: 3.9.7
 
 Package: mtcadummy-dkms
 Architecture: all

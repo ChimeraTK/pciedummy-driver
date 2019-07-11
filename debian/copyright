@@ -1,5 +1,5 @@
 Format: http://dep.debian.net/deps/dep5
-Source: <https://svnsrv.desy.de/public/mtca4u/drivers/mtcadummy>
+Source: <https://github.com/ChimeraTK/pciedummy-driver>
 
 Files: *
 Copyright: 2014 Martin Killenberg <martin.killenberg@desy.de>
