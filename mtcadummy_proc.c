@@ -91,6 +91,7 @@ static int mtcadummy_proc_open(struct inode* inode, struct file* file) {
   return seq_open(file, &mtcadummy_seq_operations);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
 /*
  * Create a set of file operations for the proc file.
  */
@@ -99,6 +100,14 @@ static struct file_operations mtcadummy_proc_opperations = {.owner = THIS_MODULE
     .read = seq_read,
     .llseek = seq_lseek,
     .release = seq_release};
+#else
+static struct proc_ops mtcadummy_proc_opperations = {
+    .proc_open = mtcadummy_proc_open,
+    .proc_read = seq_read,
+    .proc_lseek = seq_lseek,
+    .proc_release = seq_release
+};
+#endif
 
 /*
  * Actually create (and remove) the /proc file(s). They cannot be static because
