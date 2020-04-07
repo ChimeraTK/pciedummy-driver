@@ -76,6 +76,7 @@ int checkAndCalculateTransferInformation(
     case 5:
       transferInformation->barStart = 0;
       transferInformation->barSizeInBytes = 0;
+      break;
 
     default:
       printk("MTCADUMMY_WRITE_NO_STRUCT: Invalid bar number %d\n", transferInformation->bar);
