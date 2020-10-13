@@ -1,0 +1,3 @@
+# Automatically load the mtcadummy module at boot time
+
+mtcadummy
