@@ -11,7 +11,7 @@ all:
 install: all
 	make -C /lib/modules/$(KVERSION)/build V=1 M=$(PWD) modules_install
 	cp 10-mtcadummy.rules /etc/udev/rules.d
-        cp mtcadummy.modules-conf /etc/modules-load.d/mtcadummy.conf
+	cp mtcadummy.modules-conf /etc/modules-load.d/mtcadummy.conf
 	depmod
 
 clean:
