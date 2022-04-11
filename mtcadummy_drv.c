@@ -356,6 +356,19 @@ static ssize_t mtcaDummy_write(struct file* filp, const char __user* buf, size_t
   device_rw writeReqInfo;
   u32* barBaseAddress;
   size_t barSize;
+  bool writeFail;
+
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    dbg_print("%s", "Failed to acquire control mutex while opening file...");
+    return -ERESTARTSYS;
+  }
+
+  writeFail = controlData.write_error;
+  mutex_unlock(&controlMutex);
+
+  if (writeFail) {
+    return -EFAULT;
+  }
 
   privData = filp->private_data;
   if(mutex_lock_interruptible(&privData->devMutex)) {
