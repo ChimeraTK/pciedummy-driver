@@ -188,7 +188,21 @@ static void __exit mtcaDummy_cleanup_module(void) {
 }
 
 static int mtcaDummy_open(struct inode* inode, struct file* filp) {
+  bool openFail;
   mtcaDummyData* privData;
+
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    dbg_print("%s", "Failed to acquire control mutex while opening file...");
+    return -ERESTARTSYS;
+  }
+
+  openFail = controlData.open_error;
+  mutex_unlock(&controlMutex);
+
+  if (openFail) {
+    return -EINVAL;
+  }
+
   privData = container_of(inode->i_cdev, mtcaDummyData, cdev);
   filp->private_data = privData;
 
