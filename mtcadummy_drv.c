@@ -77,8 +77,6 @@ static int __init mtcaDummy_init_module(void) {
     memset(dummyPrivateData[i].systemBar, 0, MTCADUMMY_N_REGISTERS * sizeof(u32));
     dummyPrivateData[i].dmaBar = kmalloc(MTCADUMMY_DMA_SIZE, GFP_KERNEL);
     if(dummyPrivateData[i].dmaBar == NULL) {
-      /* free the already allocated memory */
-      kfree(dummyPrivateData[i].systemBar);
       goto err_allocate_dmaBar;
     }
     memset(dummyPrivateData[i].dmaBar, 0, MTCADUMMY_DMA_SIZE);
@@ -140,7 +138,7 @@ err_device_create:
   cdev_del(&dummyPrivateData[i].cdev);
 err_cdev_init:
   mutex_destroy(&dummyPrivateData[i].devMutex);
-  kfree(dummyPrivateData[i].systemBar);
+  kfree(dummyPrivateData[i].dmaBar);
 err_allocate_dmaBar:
   kfree(dummyPrivateData[i].systemBar);
 err_allocate_systemBar:
