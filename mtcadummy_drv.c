@@ -100,7 +100,7 @@ static int __init mtcaDummy_init_module(void) {
     dummyPrivateData[i].minor = mtcaDummyMinorNr + i;
     dummyPrivateData[i].major = mtcaDummyMajorNr;
 
-    /* small "hack" to have different ioct for one device */
+    /* small "hack" to have different ioctls for one device */
     switch(i) {
       case 4:
         cdev_init(&dummyPrivateData[i].cdev, &llrfDummyFileOps);
@@ -412,7 +412,7 @@ static ssize_t mtcaDummy_write(struct file* filp, const char __user* buf, size_t
     // invoce the simulation of the "firmware"
     if(mtcadummy_performActionOnWrite(writeReqInfo.offset_rw, writeReqInfo.barx_rw, privData->slotNr)) {
       dbg_print("Simulating write access to bad register at offset %d, %s.\n", writeReqInfo.offset_rw,
-          "intentinally causing an I/O error");
+          "intentionally causing an I/O error");
       mutex_unlock(&privData->devMutex);
       return -EIO;
     }
@@ -452,7 +452,7 @@ static long mtcaDummy_ioctl(struct file* filp, unsigned int cmd, unsigned long a
     return -ENOTTY;
   }
 
-  /* there are two ranges of ioct commands: 'normal' and ioclt */
+  /* there are two ranges of ioctl commands: 'normal' and ioctl */
   if(((_IOC_NR(cmd) < PCIEDOOCS_IOC_MINNR) || (_IOC_NR(cmd) > PCIEDOOCS_IOC_MAXNR)) &&
       ((_IOC_NR(cmd) < PCIEDOOCS_IOC_DMA_MINNR) || (_IOC_NR(cmd) > PCIEDOOCS_IOC_DMA_MAXNR))) {
     dbg_print("Incorrect ioctl command %d\n", cmd);
