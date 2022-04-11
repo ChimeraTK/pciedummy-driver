@@ -15,8 +15,8 @@ class DeviceIOException : public std::exception {
   std::string _message; /**< exception description*/
  public:
   DeviceIOException(const std::string& message) : _message(message) {}
-  const char* what() const throw() { return _message.c_str(); }
-  ~DeviceIOException() throw() {}
+  const char* what() const noexcept override { return _message.c_str(); }
+  ~DeviceIOException() noexcept override {}
 };
 
 /** Just a class for testing.
@@ -26,7 +26,7 @@ class DeviceIOException : public std::exception {
 class ReaderWriter {
  public:
   ReaderWriter(std::string const& deviceFileName);
-  ~ReaderWriter();
+  virtual ~ReaderWriter();
 
   /// The actual read implementation with struct
   virtual int32_t readSingle(uint32_t offset, uint32_t bar) = 0;
