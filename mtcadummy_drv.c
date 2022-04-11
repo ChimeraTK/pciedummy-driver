@@ -1,3 +1,4 @@
+#include "version.h"
 #include "mtcadummy.h"
 #include "mtcadummy_firmware.h"
 #include "mtcadummy_proc.h"

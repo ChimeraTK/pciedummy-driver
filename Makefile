@@ -41,9 +41,9 @@ debian_package: configure-source-files
 
 #A target which replaces the version number in the source files
 configure-source-files:
-	cat mtcadummy.h.in | sed -e "{s/@MTCADUMMY_MAJOR_VERSION@/${MTCADUMMY_MAJOR_VERSION}/}" \
+	sed -e "{s/@MTCADUMMY_MAJOR_VERSION@/${MTCADUMMY_MAJOR_VERSION}/}" \
 	-e "{s/@MTCADUMMY_MINOR_VERSION@/${MTCADUMMY_MINOR_VERSION}/}" \
-	-e "{s/@MTCADUMMY_PACKAGE_VERSION@/${MTCADUMMY_PACKAGE_VERSION}/}"  > mtcadummy.h
+	-e "{s/@MTCADUMMY_PACKAGE_VERSION@/${MTCADUMMY_PACKAGE_VERSION}/}" version.h.in > version.h
 
 #A target which replaces the version number in the control files for
 #dkms and debian packaging

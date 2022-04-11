@@ -1,3 +1,4 @@
+#include "version.h"
 #include "mtcadummy_firmware.h"
 
 void mtcadummy_initialiseSystemBar(u32* systemBarBaseAddress) {
