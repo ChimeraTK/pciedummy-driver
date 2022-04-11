@@ -30,16 +30,27 @@ void mtcadummy_initialiseSystemBar(u32* systemBarBaseAddress) {
   *(systemBarBaseAddress + MTCADUMMY_BROKEN_WRITE / sizeof(u32)) = MTCADUMMY_BROKEN_WRITE;
 }
 
+#define REG(mem, addr) *((mem) + (addr) / sizeof(u32))
+
 /* do something when a register has been written */
 int mtcadummy_performActionOnWrite(u32 offset, unsigned int barNumber, unsigned int slotNumber) {
   u32* systemBarBaseAddress;
   u32* dmaBarBaseAddress;
+  bool spiFail;
 
   if(barNumber != 0) {
     /*Currently only some actions are foreseen when writing to the system bar.
       Just retrun otherwise */
     return 0;
   }
+
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    dbg_print("%s", "Failed to acquire control mutex while opening file...");
+    return -ERESTARTSYS;
+  }
+
+  spiFail = controlData.spi_error;
+  mutex_unlock(&controlMutex);
 
   systemBarBaseAddress = dummyPrivateData[slotNumber].systemBar;
   dmaBarBaseAddress = dummyPrivateData[slotNumber].dmaBar;
@@ -87,15 +98,17 @@ int mtcadummy_performActionOnWrite(u32 offset, unsigned int barNumber, unsigned 
     case MTCADUMMY_BROKEN_WRITE:
       return -1;
     case MTCADUMMY_WORD_SPI_WRITE:
-      if(*(systemBarBaseAddress + MTCADUMMY_WORD_SPI_SYNC / sizeof(u32)) == MTCADUMMY_SPI_SYNC_REQUESTED) {
-        *(systemBarBaseAddress + MTCADUMMY_WORD_SPI_READ / sizeof(u32)) =
-            *(systemBarBaseAddress + MTCADUMMY_WORD_SPI_WRITE / sizeof(u32));
-        *(systemBarBaseAddress + MTCADUMMY_WORD_SPI_SYNC / sizeof(u32)) = MTCADUMMY_SPI_SYNC_OK;
+      if(REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_SYNC) == MTCADUMMY_SPI_SYNC_REQUESTED) {
+          REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_READ) = REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_WRITE);
+          REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_SYNC) =
+            spiFail ? MTCADUMMY_SPI_SYNC_ERROR : MTCADUMMY_SPI_SYNC_OK;
+      } else {
+          REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_READ) = MTCADUMMY_SPI_SYNC_ERROR;
       }
-      else {
-        *(systemBarBaseAddress + MTCADUMMY_WORD_SPI_SYNC / sizeof(u32)) = MTCADUMMY_SPI_SYNC_ERROR;
-      }
+      break;
+    default:
       /* default: do nothing */
+      break;
   }
   return 0;
 }
