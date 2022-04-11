@@ -229,9 +229,21 @@ static ssize_t mtcaDummy_read(struct file* filp, char __user* buf, size_t count,
   device_rw readReqInfo;
   u32* barBaseAddress;
   size_t barSize;
+  bool readFail;
+
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    dbg_print("%s", "Failed to acquire control mutex while opening file...");
+    return -ERESTARTSYS;
+  }
+
+  readFail = controlData.read_error;
+  mutex_unlock(&controlMutex);
+
+  if (readFail) {
+    return -EFAULT;
+  }
 
   privData = filp->private_data;
-
   if(mutex_lock_interruptible(&privData->devMutex)) {
     dbg_print("mutex_lock_interruptible %s\n", "- locking attempt was interrupted by a signal");
     return -ERESTARTSYS;
