@@ -38,8 +38,16 @@ struct file_operations llrfDummyFileOps;
 struct file_operations noIoctlDummyFileOps;
 struct file_operations pcieuniDummyFileOps;
 
+DEFINE_MUTEX(controlMutex);
+
 /* this is the part I want to avoid, or is it not avoidable?*/
 mtcaDummyData dummyPrivateData[MTCADUMMY_NR_DEVS];
+
+struct mtcaDummyControl controlData = {.data = dummyPrivateData,
+                                       .open_error = 0,
+                                       .read_error = 0,
+                                       .write_error = 0,
+                                       .spi_error = 0};
 
 /* initialise the device when loading the driver */
 static int __init mtcaDummy_init_module(void) {
@@ -128,7 +136,7 @@ static int __init mtcaDummy_init_module(void) {
     }
   }
 
-  mtcadummy_create_proc();
+  mtcadummy_create_proc(&controlData);
 
   dbg_print("%s\n", "MODULE INIT DONE");
   return 0;
