@@ -80,7 +80,6 @@ typedef struct _mtcaDummyData {
 
   u32* systemBar; /* only access when holding the mutex! */
   u32* dmaBar;    /* Just called dma. Only access when holding the mutex! */
-  u32* ctrlBar;
   /* not sure, but I think from memory there is no need for a buffer.
      it's in memory anyway.
     void*               pWriteBuf;
