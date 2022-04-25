@@ -40,10 +40,6 @@ extern "C" {
 
 #define MTCADUMMY_NR_DEVS 7 /*create 7 devices*/
 
-#define MTCADUMMY_DRV_VERSION_MAJ @MTCADUMMY_MAJOR_VERSION@ /*dummy driver major version*/
-#define MTCADUMMY_DRV_VERSION_MIN @MTCADUMMY_MINOR_VERSION@ /*dummy driver minor version*/
-#define MTCADUMMY_MODULE_VERSION "@MTCADUMMY_PACKAGE_VERSION@"
-
 //#define MTCADUMMY_VENDOR_ID               0x10EE
 //#define MTCADUMMY_DEVICE_ID               0x0038
 
@@ -101,13 +97,24 @@ typedef struct _mtcaDummyData {
    */
 } mtcaDummyData;
 
+struct mtcaDummyControl {
+  mtcaDummyData* data;
+  bool open_error : 1;
+  bool read_error : 1;
+  bool write_error : 1;
+  bool spi_error : 1;
+};
+
 /* defined in the mtcadrummy_drv.c file, but needed in all of the .c files */
 extern mtcaDummyData dummyPrivateData[MTCADUMMY_NR_DEVS];
+
+extern struct mutex controlMutex;
+extern struct mtcaDummyControl controlData;
 
 #  ifdef __DEBUG_MODE__
 #    define dbg_print(format, ...)                                                                                     \
       do {                                                                                                             \
-        printk("%s: [%s] " format, MTCADUMMY_DBG_MSG_DEV_NAME, __FUNCTION__, __VA_ARGS__);                             \
+        printk(KERN_DEBUG "%s: [%s] " format, MTCADUMMY_DBG_MSG_DEV_NAME, __FUNCTION__, __VA_ARGS__);                             \
       } while(0);
 #  else
 #    define dbg_print(...)

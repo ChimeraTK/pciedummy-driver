@@ -123,6 +123,19 @@ ssize_t mtcaDummy_read_no_struct(struct file* filp, char __user* buf, size_t cou
   mtcaDummyData* deviceData;
   transfer_information transferInformation;
   int transferInfoError;
+  bool readFail;
+
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    dbg_print("%s", "Failed to acquire control mutex while opening file...");
+    return -ERESTARTSYS;
+  }
+
+  readFail = controlData.read_error;
+  mutex_unlock(&controlMutex);
+
+  if (readFail) {
+    return -EFAULT;
+  }
 
   deviceData = filp->private_data;
 
@@ -185,6 +198,19 @@ ssize_t mtcaDummy_write_no_struct(struct file* filp, const char __user* buf, siz
   mtcaDummyData* deviceData;
   transfer_information transferInformation;
   int transferInfoError;
+  bool writeFail;
+
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    dbg_print("%s", "Failed to acquire control mutex while opening file...");
+    return -ERESTARTSYS;
+  }
+
+  writeFail = controlData.write_error;
+  mutex_unlock(&controlMutex);
+
+  if (writeFail) {
+    return -EFAULT;
+  }
 
   deviceData = filp->private_data;
 

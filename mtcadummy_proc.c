@@ -5,12 +5,11 @@
 
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/uaccess.h>
 #include <linux/version.h>
 
 #include "mtcadummy.h"
 #include "mtcadummy_proc.h"
-
-/*extern mtcaDummyData dummyPrivateData[MTCADUMMY_NR_DEVS];*/
 
 /*
  * Here are our sequence iteration methods.  Our "position" is
@@ -18,13 +17,13 @@
  */
 static void* mtcadummy_seq_start(struct seq_file* s, loff_t* pos) {
   if(*pos >= MTCADUMMY_NR_DEVS) return NULL; /* No more to read */
-  return dummyPrivateData + *pos;
+  return ((struct mtcaDummyControl *) s->private)->data + *pos;
 }
 
 static void* mtcadummy_seq_next(struct seq_file* s, void* v, loff_t* pos) {
   (*pos)++;
   if(*pos >= MTCADUMMY_NR_DEVS) return NULL;
-  return dummyPrivateData + *pos;
+  return ((struct mtcaDummyControl *) s->private)->data + *pos;
 }
 
 static void mtcadummy_seq_stop(struct seq_file* s, void* v) {
@@ -88,22 +87,97 @@ static struct seq_operations mtcadummy_seq_operations = {.start = mtcadummy_seq_
  * method which sets up the sequence operators.
  */
 static int mtcadummy_proc_open(struct inode* inode, struct file* file) {
-  return seq_open(file, &mtcadummy_seq_operations);
+  int ret = seq_open(file, &mtcadummy_seq_operations);
+  if (!ret) {
+    // copied from single_open
+    ((struct seq_file*)file->private_data)->private = PDE_DATA(inode);
+  }
+
+  return ret;
+}
+
+static ssize_t mtcadummy_proc_write(struct file* file, const char __user* ubuf, size_t count, loff_t* ppos) {
+  struct mtcaDummyControl* d = PDE_DATA(file_inode(file));
+
+  size_t len;
+  char cmd[255];
+  char* iter = cmd;
+  char* token = NULL;
+  int value = 0;
+  int open = -1, spi = -1, read = -1, write = -1;
+
+  dbg_print("%s", "got write\n");
+
+  len = min(count, sizeof(cmd) - 1);
+  if (copy_from_user(cmd, ubuf, len))
+    return -EFAULT;
+
+  cmd[len] = '\0';
+
+  // Collect all parameters, lock the control mutex once we are done
+  // to modify all in one go
+  while ((token = strsep(&iter, " ")) != NULL) {
+    if (sscanf(token, "open:%i", &value) == 1) {
+      open = value;
+    } else if (sscanf(token, "read:%i", &value) == 1) {
+      read = value;
+    } else if (sscanf(token, "write:%i", &value) == 1) {
+      write = value;
+    } else if (sscanf(token, "spi:%i", &value) == 1) {
+      spi = value;
+    }
+    dbg_print("Got token %s\n", token);
+  }
+
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    pr_warn("Unable to lock control mutex");
+    return -EWOULDBLOCK;
+  }
+
+  // Fill control data - or copy back if not set, so we can print it below
+  if (open > -1)
+    d->open_error = open;
+  else
+    open = d->open_error;
+
+  if (read > -1)
+    d->read_error = read;
+  else
+    read = d->read_error;
+
+  if (write > -1)
+    d->write_error = write;
+  else
+    write = d->write_error;
+
+  if (spi > -1)
+    d->spi_error = spi;
+  else
+    spi = d->spi_error;
+
+  mutex_unlock(&controlMutex);
+
+  dbg_print("module parameters changed: open:%d read:%d write:%d spi:%d\n", open, read, write, spi);
+
+  return count;
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
 /*
  * Create a set of file operations for the proc file.
  */
-static struct file_operations mtcadummy_proc_opperations = {.owner = THIS_MODULE,
+static struct file_operations mtcadummy_proc_opperations = {
+    .owner = THIS_MODULE,
     .open = mtcadummy_proc_open,
     .read = seq_read,
+    .write = mtcadummy_proc_write,
     .llseek = seq_lseek,
     .release = seq_release};
 #else
 static struct proc_ops mtcadummy_proc_opperations = {
     .proc_open = mtcadummy_proc_open,
     .proc_read = seq_read,
+    .proc_write = mtcadummy_proc_write,
     .proc_lseek = seq_lseek,
     .proc_release = seq_release
 };
@@ -114,14 +188,8 @@ static struct proc_ops mtcadummy_proc_opperations = {
  * they are used in the other object.
  */
 
-void mtcadummy_create_proc(void) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-  struct proc_dir_entry* entry;
-  entry = create_proc_entry("mtcadummy", 0, NULL);
-  if(entry) entry->proc_fops = &mtcadummy_proc_opperations;
-#else
-  proc_create("mtcadummy", 0, NULL, &mtcadummy_proc_opperations);
-#endif
+void mtcadummy_create_proc(void *data) {
+  proc_create_data("mtcadummy", 0666, NULL, &mtcadummy_proc_opperations, data);
 }
 
 void mtcadummy_remove_proc(void) {

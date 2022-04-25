@@ -1,11 +1,14 @@
+#include "version.h"
 #include "mtcadummy_firmware.h"
 
+#define REG(mem, addr) *((mem) + (addr) / sizeof(u32))
+
 void mtcadummy_initialiseSystemBar(u32* systemBarBaseAddress) {
-  *(systemBarBaseAddress + MTCADUMMY_WORD_FIRMWARE / sizeof(u32)) = MTCADUMMY_DRV_VERSION_MAJ;
-  *(systemBarBaseAddress + MTCADUMMY_WORD_COMPILATION / sizeof(u32)) = MTCADUMMY_DRV_VERSION_MIN;
-  *(systemBarBaseAddress + MTCADUMMY_WORD_STATUS / sizeof(u32)) = 0; /*is this the value for ok? */
-  *(systemBarBaseAddress + MTCADUMMY_WORD_USER / sizeof(u32)) = 0;   /*let the user do this*/
-  *(systemBarBaseAddress + MTCADUMMY_WORD_DUMMY / sizeof(u32)) = MTCADUMMY_DMMY_AS_ASCII;
+  REG(systemBarBaseAddress, MTCADUMMY_WORD_FIRMWARE) = MTCADUMMY_DRV_VERSION_MAJ;
+  REG(systemBarBaseAddress, MTCADUMMY_WORD_COMPILATION) = MTCADUMMY_DRV_VERSION_MIN;
+  REG(systemBarBaseAddress, MTCADUMMY_WORD_STATUS) = 0; /*is this the value for ok? */
+  REG(systemBarBaseAddress, MTCADUMMY_WORD_USER) = 0;   /*let the user do this*/
+  REG(systemBarBaseAddress, MTCADUMMY_WORD_DUMMY) = MTCADUMMY_DMMY_AS_ASCII;
   /* ok, the rest will stay 0. As we zeroed everything during install we leave
    *it like this (systemBarBaseAddress + MTCADUMMY_WORD_CLK_CNT    /sizeof(u32)
    *) = (systemBarBaseAddress + MTCADUMMY_WORD_CLK_CNT_0  /sizeof(u32) ) =
@@ -19,20 +22,22 @@ void mtcadummy_initialiseSystemBar(u32* systemBarBaseAddress) {
 
   /* We set the clock reset bit to 1 to indicate that all counters have been
    * zeroed */
-  *(systemBarBaseAddress + MTCADUMMY_WORD_CLK_RST / sizeof(u32)) = 1;
+  REG(systemBarBaseAddress, MTCADUMMY_WORD_CLK_RST) = 1;
   /*
-   *(systemBarBaseAddress + MTCADUMMY_WORD_ADC_ENA    /sizeof(u32)) =
-   *(systemBarBaseAddress +  MTCADUMMY_BROKEN_REGISTER  /sizeof(u32)) =
+   REG(systemBarBaseAddress, MTCADUMMY_WORD_ADC_ENA) =
+   REG(systemBarBaseAddress, MTCADUMMY_BROKEN_REGISTER) =
    */
 
   /* you can read back the address, but cannot write. */
-  *(systemBarBaseAddress + MTCADUMMY_BROKEN_WRITE / sizeof(u32)) = MTCADUMMY_BROKEN_WRITE;
+  REG(systemBarBaseAddress, MTCADUMMY_BROKEN_WRITE) = MTCADUMMY_BROKEN_WRITE;
 }
+
 
 /* do something when a register has been written */
 int mtcadummy_performActionOnWrite(u32 offset, unsigned int barNumber, unsigned int slotNumber) {
   u32* systemBarBaseAddress;
   u32* dmaBarBaseAddress;
+  bool spiFail;
 
   if(barNumber != 0) {
     /*Currently only some actions are foreseen when writing to the system bar.
@@ -40,24 +45,32 @@ int mtcadummy_performActionOnWrite(u32 offset, unsigned int barNumber, unsigned 
     return 0;
   }
 
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    dbg_print("%s", "Failed to acquire control mutex while opening file...");
+    return -ERESTARTSYS;
+  }
+
+  spiFail = controlData.spi_error;
+  mutex_unlock(&controlMutex);
+
   systemBarBaseAddress = dummyPrivateData[slotNumber].systemBar;
   dmaBarBaseAddress = dummyPrivateData[slotNumber].dmaBar;
 
   switch(offset) {
     case MTCADUMMY_WORD_CLK_RST:
-      if(*(systemBarBaseAddress + MTCADUMMY_WORD_CLK_RST / sizeof(u32))) /* test for the value of clk_rst */
+      if(REG(systemBarBaseAddress, MTCADUMMY_WORD_CLK_RST)) /* test for the value of clk_rst */
       {
         /* reset all clock counter and clock mux values to 0 */
-        *(systemBarBaseAddress + MTCADUMMY_WORD_CLK_CNT_0 / sizeof(u32)) = 0;
-        *(systemBarBaseAddress + MTCADUMMY_WORD_CLK_CNT_1 / sizeof(u32)) = 0;
-        *(systemBarBaseAddress + MTCADUMMY_WORD_CLK_MUX_0 / sizeof(u32)) = 0;
-        *(systemBarBaseAddress + MTCADUMMY_WORD_CLK_MUX_1 / sizeof(u32)) = 0;
-        *(systemBarBaseAddress + MTCADUMMY_WORD_CLK_MUX_2 / sizeof(u32)) = 0;
-        *(systemBarBaseAddress + MTCADUMMY_WORD_CLK_MUX_3 / sizeof(u32)) = 0;
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_CLK_CNT_0) = 0;
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_CLK_CNT_1) = 0;
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_CLK_MUX_0) = 0;
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_CLK_MUX_1) = 0;
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_CLK_MUX_2) = 0;
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_CLK_MUX_3) = 0;
       }
       break;
     case MTCADUMMY_WORD_ADC_ENA:
-      if(*(systemBarBaseAddress + MTCADUMMY_WORD_ADC_ENA / sizeof(u32))) {
+      if(REG(systemBarBaseAddress, MTCADUMMY_WORD_ADC_ENA)) {
         unsigned int sample;
         /* perform a dummy sampling */
         unsigned int nSamples = 25;
@@ -67,34 +80,35 @@ int mtcadummy_performActionOnWrite(u32 offset, unsigned int barNumber, unsigned 
         }
 
         /* set the clock count and reset the "clock reset" register */
-        *(systemBarBaseAddress + MTCADUMMY_WORD_CLK_CNT_0 / sizeof(u32)) = nSamples;
-        *(systemBarBaseAddress + MTCADUMMY_WORD_CLK_RST / sizeof(u32)) = 0;
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_CLK_CNT_0) = nSamples;
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_CLK_RST) = 0;
       }
       break;
       // set back the firmware word. This is read only
     case MTCADUMMY_WORD_FIRMWARE:
-      *(systemBarBaseAddress + MTCADUMMY_WORD_FIRMWARE / sizeof(u32)) = MTCADUMMY_DRV_VERSION_MAJ;
+      REG(systemBarBaseAddress, MTCADUMMY_WORD_FIRMWARE) = MTCADUMMY_DRV_VERSION_MAJ;
       break;
       // set back the compilation word. This is read only
     case MTCADUMMY_WORD_COMPILATION:
-      *(systemBarBaseAddress + MTCADUMMY_WORD_COMPILATION / sizeof(u32)) = MTCADUMMY_DRV_VERSION_MIN;
+      REG(systemBarBaseAddress, MTCADUMMY_WORD_COMPILATION) = MTCADUMMY_DRV_VERSION_MIN;
       break;
     case MTCADUMMY_WORD_DUMMY:
-      *(systemBarBaseAddress + MTCADUMMY_WORD_DUMMY / sizeof(u32)) = MTCADUMMY_DMMY_AS_ASCII;
+      REG(systemBarBaseAddress, MTCADUMMY_WORD_DUMMY) = MTCADUMMY_DMMY_AS_ASCII;
       break;
     case MTCADUMMY_BROKEN_REGISTER:
     case MTCADUMMY_BROKEN_WRITE:
       return -1;
     case MTCADUMMY_WORD_SPI_WRITE:
-      if(*(systemBarBaseAddress + MTCADUMMY_WORD_SPI_SYNC / sizeof(u32)) == MTCADUMMY_SPI_SYNC_REQUESTED) {
-        *(systemBarBaseAddress + MTCADUMMY_WORD_SPI_READ / sizeof(u32)) =
-            *(systemBarBaseAddress + MTCADUMMY_WORD_SPI_WRITE / sizeof(u32));
-        *(systemBarBaseAddress + MTCADUMMY_WORD_SPI_SYNC / sizeof(u32)) = MTCADUMMY_SPI_SYNC_OK;
+      if (REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_SYNC) == MTCADUMMY_SPI_SYNC_REQUESTED) {
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_READ) = REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_WRITE);
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_SYNC) = spiFail ? MTCADUMMY_SPI_SYNC_ERROR : MTCADUMMY_SPI_SYNC_OK;
+      } else {
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_READ) = MTCADUMMY_SPI_SYNC_ERROR;
       }
-      else {
-        *(systemBarBaseAddress + MTCADUMMY_WORD_SPI_SYNC / sizeof(u32)) = MTCADUMMY_SPI_SYNC_ERROR;
-      }
+      break;
+    default:
       /* default: do nothing */
+      break;
   }
   return 0;
 }

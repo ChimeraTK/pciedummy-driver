@@ -1,5 +1,3 @@
-#include <sstream>
-
 #include <boost/test/included/unit_test.hpp>
 using namespace boost::unit_test_framework;
 #include <boost/shared_ptr.hpp>
@@ -11,6 +9,8 @@ using namespace boost::unit_test_framework;
 // we use the defines from the original implementation
 #include "mtcadummy.h"
 #include "mtcadummy_firmware.h"
+
+#include <sstream>
 
 #define N_WORDS_DMA (MTCADUMMY_DMA_SIZE / sizeof(int32_t))
 
@@ -35,7 +35,8 @@ class MtcaDummyTest {
 template<class T>
 class MtcaDummyTestSuite : public test_suite {
  public:
-  MtcaDummyTestSuite(std::string const& deviceFileName) : test_suite("MtcaDummy test suite") {
+   MtcaDummyTestSuite(std::string const& deviceFileName)
+     : test_suite(std::string{"MtcaDummy test suite for "} + deviceFileName) {
     // create an instance of the test class
     boost::shared_ptr<ReaderWriter> readerWriter(new T(deviceFileName));
 

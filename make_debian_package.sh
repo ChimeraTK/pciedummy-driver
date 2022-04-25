@@ -6,7 +6,7 @@ set -e
 #Configure the debian directory.
 
 #First determine the package version from the source code
-MTCADUMMY_PACKAGE_VERSION=`grep "define MTCADUMMY_MODULE_VERSION" mtcadummy.h | sed "{s/^.*MTCADUMMY_MODULE_VERSION *\"//}" | sed "{s/\".*$//}"`
+MTCADUMMY_PACKAGE_VERSION=`grep "define MTCADUMMY_MODULE_VERSION" version.h | sed "{s/^.*MTCADUMMY_MODULE_VERSION *\"//}" | sed "{s/\".*$//}"`
 
 #The package versions for doocs / Ubuntu contain the codename of the distribution. Get it from the system.
 CODENAME=`lsb_release -c | sed "{s/Codename:\s*//}"`

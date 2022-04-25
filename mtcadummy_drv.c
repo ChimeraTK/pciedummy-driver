@@ -1,3 +1,4 @@
+#include "version.h"
 #include "mtcadummy.h"
 #include "mtcadummy_firmware.h"
 #include "mtcadummy_proc.h"
@@ -37,8 +38,16 @@ struct file_operations llrfDummyFileOps;
 struct file_operations noIoctlDummyFileOps;
 struct file_operations pcieuniDummyFileOps;
 
+DEFINE_MUTEX(controlMutex);
+
 /* this is the part I want to avoid, or is it not avoidable?*/
 mtcaDummyData dummyPrivateData[MTCADUMMY_NR_DEVS];
+
+struct mtcaDummyControl controlData = {.data = dummyPrivateData,
+                                       .open_error = 0,
+                                       .read_error = 0,
+                                       .write_error = 0,
+                                       .spi_error = 0};
 
 /* initialise the device when loading the driver */
 static int __init mtcaDummy_init_module(void) {
@@ -77,8 +86,6 @@ static int __init mtcaDummy_init_module(void) {
     memset(dummyPrivateData[i].systemBar, 0, MTCADUMMY_N_REGISTERS * sizeof(u32));
     dummyPrivateData[i].dmaBar = kmalloc(MTCADUMMY_DMA_SIZE, GFP_KERNEL);
     if(dummyPrivateData[i].dmaBar == NULL) {
-      /* free the already allocated memory */
-      kfree(dummyPrivateData[i].systemBar);
       goto err_allocate_dmaBar;
     }
     memset(dummyPrivateData[i].dmaBar, 0, MTCADUMMY_DMA_SIZE);
@@ -93,7 +100,7 @@ static int __init mtcaDummy_init_module(void) {
     dummyPrivateData[i].minor = mtcaDummyMinorNr + i;
     dummyPrivateData[i].major = mtcaDummyMajorNr;
 
-    /* small "hack" to have different ioct for one device */
+    /* small "hack" to have different ioctls for one device */
     switch(i) {
       case 4:
         cdev_init(&dummyPrivateData[i].cdev, &llrfDummyFileOps);
@@ -129,7 +136,7 @@ static int __init mtcaDummy_init_module(void) {
     }
   }
 
-  mtcadummy_create_proc();
+  mtcadummy_create_proc(&controlData);
 
   dbg_print("%s\n", "MODULE INIT DONE");
   return 0;
@@ -140,7 +147,7 @@ err_device_create:
   cdev_del(&dummyPrivateData[i].cdev);
 err_cdev_init:
   mutex_destroy(&dummyPrivateData[i].devMutex);
-  kfree(dummyPrivateData[i].systemBar);
+  kfree(dummyPrivateData[i].dmaBar);
 err_allocate_dmaBar:
   kfree(dummyPrivateData[i].systemBar);
 err_allocate_systemBar:
@@ -181,7 +188,21 @@ static void __exit mtcaDummy_cleanup_module(void) {
 }
 
 static int mtcaDummy_open(struct inode* inode, struct file* filp) {
+  bool openFail;
   mtcaDummyData* privData;
+
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    dbg_print("%s", "Failed to acquire control mutex while opening file...");
+    return -ERESTARTSYS;
+  }
+
+  openFail = controlData.open_error;
+  mutex_unlock(&controlMutex);
+
+  if (openFail) {
+    return -EINVAL;
+  }
+
   privData = container_of(inode->i_cdev, mtcaDummyData, cdev);
   filp->private_data = privData;
 
@@ -208,9 +229,21 @@ static ssize_t mtcaDummy_read(struct file* filp, char __user* buf, size_t count,
   device_rw readReqInfo;
   u32* barBaseAddress;
   size_t barSize;
+  bool readFail;
+
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    dbg_print("%s", "Failed to acquire control mutex while opening file...");
+    return -ERESTARTSYS;
+  }
+
+  readFail = controlData.read_error;
+  mutex_unlock(&controlMutex);
+
+  if (readFail) {
+    return -EFAULT;
+  }
 
   privData = filp->private_data;
-
   if(mutex_lock_interruptible(&privData->devMutex)) {
     dbg_print("mutex_lock_interruptible %s\n", "- locking attempt was interrupted by a signal");
     return -ERESTARTSYS;
@@ -323,6 +356,19 @@ static ssize_t mtcaDummy_write(struct file* filp, const char __user* buf, size_t
   device_rw writeReqInfo;
   u32* barBaseAddress;
   size_t barSize;
+  bool writeFail;
+
+  if (mutex_lock_interruptible(&controlMutex) != 0) {
+    dbg_print("%s", "Failed to acquire control mutex while opening file...");
+    return -ERESTARTSYS;
+  }
+
+  writeFail = controlData.write_error;
+  mutex_unlock(&controlMutex);
+
+  if (writeFail) {
+    return -EFAULT;
+  }
 
   privData = filp->private_data;
   if(mutex_lock_interruptible(&privData->devMutex)) {
@@ -366,7 +412,7 @@ static ssize_t mtcaDummy_write(struct file* filp, const char __user* buf, size_t
     // invoce the simulation of the "firmware"
     if(mtcadummy_performActionOnWrite(writeReqInfo.offset_rw, writeReqInfo.barx_rw, privData->slotNr)) {
       dbg_print("Simulating write access to bad register at offset %d, %s.\n", writeReqInfo.offset_rw,
-          "intentinally causing an I/O error");
+          "intentionally causing an I/O error");
       mutex_unlock(&privData->devMutex);
       return -EIO;
     }
@@ -406,7 +452,7 @@ static long mtcaDummy_ioctl(struct file* filp, unsigned int cmd, unsigned long a
     return -ENOTTY;
   }
 
-  /* there are two ranges of ioct commands: 'normal' and ioclt */
+  /* there are two ranges of ioctl commands: 'normal' and ioctl */
   if(((_IOC_NR(cmd) < PCIEDOOCS_IOC_MINNR) || (_IOC_NR(cmd) > PCIEDOOCS_IOC_MAXNR)) &&
       ((_IOC_NR(cmd) < PCIEDOOCS_IOC_DMA_MINNR) || (_IOC_NR(cmd) > PCIEDOOCS_IOC_DMA_MAXNR))) {
     dbg_print("Incorrect ioctl command %d\n", cmd);
