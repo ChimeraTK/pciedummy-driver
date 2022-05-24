@@ -6,7 +6,7 @@ include /usr/share/dpkg/pkg-info.mk
 	dh $@ --with dkms
 
 override_dh_auto_install:
-	dh_install *.h *.c Makefile usr/src/mtcadummy-$(DEB_VERSION_UPSTREAM)/
+	dh_install *.h.in *.h *.c Makefile usr/src/mtcadummy-$(DEB_VERSION_UPSTREAM)/
 	dh_install mtcadummy.conf /etc/modules-load.d/
 	dh_install 10-mtcadummy.rules /etc/udev/rules.d
 override_dh_dkms:
