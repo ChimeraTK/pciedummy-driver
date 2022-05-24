@@ -1,22 +1,15 @@
 project("pciedummy")
 cmake_minimum_required(VERSION 3.5)
 
-# Find all potential kernel modules
-file(GLOB MODULES LIST_DIRECTORIES true /lib/modules/*/build)
+set(${PROJECT_NAME}_MAJOR_VERSION 00)
+set(${PROJECT_NAME}_MINOR_VERSION 10)
+set(${PROJECT_NAME}_PATCH_VERSION 02)
 
-# Sort and reverse list to have the latest version as first 
-list(SORT MODULES)
-list(GET MODULES -1 NEWEST_MODULE_PATH)
+include(cmake/set_version_numbers.cmake)
 
-# Convert that path into a list: /lib/modules/5.0.0/build -> ;lib;modules;5.0.0;build
-string(REPLACE "/" ";" NEWEST_MODULE_PATH ${NEWEST_MODULE_PATH})
-
-# The version is on the 4th index:
-list(GET NEWEST_MODULE_PATH 3 NEWEST_MODULE_VERSION)
-
-message("Building kernel module for ${NEWEST_MODULE_VERSION}")
-
-add_custom_target(kmod ALL make "KVERSION=${NEWEST_MODULE_VERSION}" WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-install(CODE "MESSAGE(\"No install\")")
+file(GLOB dkms_source *.h.in *.h *.c Makefile)
+install(FILES ${dkms_source} DESTINATION src/mtcadummy-${${PROJECT_NAME}_VERSION})
+install(FILES mtcadummy.conf DESTINATION etc/modules-load.d)
+install(FILES 10-mtcadummy.rules DESTINATION etc/udev/rules.d)
 enable_testing()
 add_test(NAME dummy COMMAND true)

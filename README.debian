@@ -1,8 +1,0 @@
-The debian directory is not completely ready to use. 
-
-Please use "make_debian_package.sh" or "make debian_package" to generate
-a changelog for the correct package version
-
-If you want to review the changelog before building the package, export
-NOBUILD=1 before calling any of the above commands, inspect the changelog,
-then issue dpkg-buildpackage -rfakeroot -uc -us to build the package.
