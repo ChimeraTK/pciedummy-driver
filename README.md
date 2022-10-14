@@ -44,8 +44,8 @@ These three registers simulate the SPI handshaing behavior as used e.g. in [Moto
 Register name | Address | Description
 ------------- | --------|-----
 WORD_SPI_WRITE | 0x00000050 | Write data if SPI_SYNC was set to SYNC_REQUESTED (0xFF). 
-WORD_SPI_READ | 0x00000054 | Set to SYNC_ERROR (0xAA) if SPI_SYNC was not set to SYNC_REQUESTED or if the driver is configured to fail SPI. Otherwise will contain what was written to WORD_SPI_WRITE
-WORD_SPI_SYNC | 0x00000058 | Ret to SYNC_REQUESTED (0xFF) before writing to WORD_SPI_WRITE for a successful write.
+WORD_SPI_READ | 0x00000054 | Will contain what was written to WORD_SPI_WRITE if WORD_SPI_SYNC was set to SYNC_REQUESTED and SPI was not configured to fail before the write, untouched otherwise
+WORD_SPI_SYNC | 0x00000058 | Set to SYNC_REQUESTED (0xFF) before writing to WORD_SPI_WRITE for a successful write. Will be reset to 0 after successful write, to SYNC_ERROR (0xAA) otherwise.
 
 ## Querying the current state
 ```
