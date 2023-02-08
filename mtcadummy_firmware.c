@@ -99,11 +99,11 @@ int mtcadummy_performActionOnWrite(u32 offset, unsigned int barNumber, unsigned 
     case MTCADUMMY_BROKEN_WRITE:
       return -1;
     case MTCADUMMY_WORD_SPI_WRITE:
-      if (REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_SYNC) == MTCADUMMY_SPI_SYNC_REQUESTED) {
+      if (REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_SYNC) == MTCADUMMY_SPI_SYNC_REQUESTED && !spiFail) {
         REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_READ) = REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_WRITE);
-        REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_SYNC) = spiFail ? MTCADUMMY_SPI_SYNC_ERROR : MTCADUMMY_SPI_SYNC_OK;
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_SYNC) = MTCADUMMY_SPI_SYNC_OK;
       } else {
-        REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_READ) = MTCADUMMY_SPI_SYNC_ERROR;
+        REG(systemBarBaseAddress, MTCADUMMY_WORD_SPI_SYNC) = MTCADUMMY_SPI_SYNC_ERROR;
       }
       break;
     default:
