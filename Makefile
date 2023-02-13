@@ -13,8 +13,14 @@ MTCADUMMY_PACKAGE_VERSION=0.10.1
 
 MTCADUMMY_DKMS_SOURCE_DIR=/usr/src/mtcadummy-${MTCADUMMY_PACKAGE_VERSION}
 
+KERNEL_SRC=/lib/modules/$(KVERSION)/build
+KERNEL_SRC_BASE=$(shell dirname $(KERNEL_SRC))
+
 all: configure-source-files	
-	make -C /lib/modules/$(KVERSION)/build V=1 M=$(PWD) modules
+	$(MAKE) -C $(KERNEL_SRC) V=1 M=$(PWD)
+
+modules_install:
+	$(MAKE) -C $(KERNEL_SRC) V=1 M=$(PWD) modules_install
 
 #Performs a dkms install
 install: dkms-prepare
@@ -26,7 +32,7 @@ uninstall:
 	dkms remove -m mtcadummy -v ${MTCADUMMY_PACKAGE_VERSION} -k $(KVERSION) || true
 
 clean:
-	test ! -d /lib/modules/$(KVERSION) || make -C /lib/modules/$(KVERSION)/build V=1 M=$(PWD) clean
+	test ! -d $(KERNEL_SRC_BASE) || $(MAKE) -C $(KERNEL_SRC) V=1 M=$(PWD) clean
 	rm -f version.h
 
 #uninstall and remove udev rules
