@@ -90,14 +90,22 @@ static int mtcadummy_proc_open(struct inode* inode, struct file* file) {
   int ret = seq_open(file, &mtcadummy_seq_operations);
   if (!ret) {
     // copied from single_open
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
     ((struct seq_file*)file->private_data)->private = PDE_DATA(inode);
+#else
+    ((struct seq_file*)file->private_data)->private = pde_data(inode);
+#endif
   }
 
   return ret;
 }
 
 static ssize_t mtcadummy_proc_write(struct file* file, const char __user* ubuf, size_t count, loff_t* ppos) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
   struct mtcaDummyControl* d = PDE_DATA(file_inode(file));
+#else
+  struct mtcaDummyControl* d = pde_data(file_inode(file));
+#endif
 
   size_t len;
   char cmd[255];
