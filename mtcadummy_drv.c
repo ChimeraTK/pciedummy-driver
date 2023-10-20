@@ -63,7 +63,12 @@ static int __init mtcaDummy_init_module(void) {
   }
   mtcaDummyMajorNr = MAJOR(dev);
   dbg_print("DEV MAJOR NR: %d\n", mtcaDummyMajorNr);
+/* see linux kernel commit 1aaba11da9aa7d7d6b52a74d45b31cac118295a1 */
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 3, 0)
+  mtcaDummyClass = class_create(MTCADUMMY_NAME);
+#else
   mtcaDummyClass = class_create(THIS_MODULE, MTCADUMMY_NAME);
+#endif
   if(IS_ERR(mtcaDummyClass)) {
     dbg_print("Error in class_create: %ld\n", PTR_ERR(mtcaDummyClass));
     goto err_class_create;
