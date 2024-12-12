@@ -1,8 +1,8 @@
 #ifndef MTCA_DUMMY_VERSION_H
 #define MTCA_DUMMY_VERSION_H
 
-#define MTCADUMMY_DRV_VERSION_MAJ @MTCADUMMY_MAJOR_VERSION@ /*dummy driver major version*/
-#define MTCADUMMY_DRV_VERSION_MIN @MTCADUMMY_MINOR_VERSION@ /*dummy driver minor version*/
-#define MTCADUMMY_MODULE_VERSION "@MTCADUMMY_PACKAGE_VERSION@"
+#define MTCADUMMY_DRV_VERSION_MAJ @mtcadummy_MAJOR_VERSION@ /*dummy driver major version*/
+#define MTCADUMMY_DRV_VERSION_MIN @mtcadummy_MINOR_VERSION@ /*dummy driver minor version*/
+#define MTCADUMMY_MODULE_VERSION "@CMAKE_PROJECT_VERSION@"
 
 #endif

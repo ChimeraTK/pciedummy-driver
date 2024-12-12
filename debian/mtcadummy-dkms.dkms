@@ -1,7 +1,0 @@
-PACKAGE_NAME="mtcadummy"
-PACKAGE_VERSION="#MODULE_VERSION#"
-BUILT_MODULE_NAME[0]="mtcadummy"
-AUTOINSTALL="yes"
-MAKE[0]="make KVERSION=$kernelver"
-CLEAN="make clean"
-DEST_MODULE_LOCATION[0]="/extra"
